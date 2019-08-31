@@ -11,7 +11,7 @@ export default class SeriesTable extends Component {
   }
 componentDidMount() {
   // Fetch the products from the database
-  fetch('/.netlify/functions/SeriesRead')
+  fetch('/.netlify/functions/seriesRead')
     .then(res => res.json())
     .then(response => {
       console.log(response.msg)

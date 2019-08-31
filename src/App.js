@@ -1,26 +1,24 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { Component } from 'react'
+import {Helmet} from "react-helmet";
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+import SeriesTable from './components/SeriesTable'
 
-export default App;
+export default class App extends Component {
+  render() {
+    return (
+      <div>
+		<Helmet
+		
+            script={[{ 
+			  type: 'text/javascript', 
+		      innerHTML: '(function(d, t) {var g = d.createElement(t),s = d.getElementsByTagName(t)[0];g.src = "https://cdn.pushalert.co/integrate_8927437e76ea83afc8a090882ab0a679.js";                        s.parentNode.insertBefore(g, s);}(document, "script"))' 
+			}]} 
+		
+		/>
+	  
+        <SeriesTable />
+      </div>
+    )
+  }
+}

@@ -10,26 +10,27 @@ export default class SeriesTable extends Component {
       nrOfEpisodes: 0
     }
   }
-componentDidMount() {
-  // Fetch the Series from the database
-  fetch('/.netlify/functions/seriesRead')
-    .then(res => res.json())
-    .then(response => {
-      console.log(response.msg)
-      const inputs = [...this.state.inputs],
-            seriesList = response.data
-        
-      seriesList.forEach(series => {
-        const productProps = this.setProductProps(series)
-        inputs.push(productProps)
-      })
-        
-      this.setState({ 
-        seriesList,
-        inputs
-      })
-    })
-    .catch(err => console.log('Error retrieving products: ', err))
+
+  componentDidMount() {
+	  // Fetch the Series from the database
+	  fetch('/.netlify/functions/seriesRead')
+		.then(res => res.json())
+		.then(response => {
+		  console.log(response.msg)
+		  const inputs = [...this.state.inputs],
+				seriesList = response.data
+
+		  seriesList.forEach(series => {
+			const productProps = this.setProductProps(series)
+			inputs.push(productProps)
+		  })
+
+		  this.setState({ 
+			seriesList,
+			inputs
+		  })
+		})
+		.catch(err => console.log('Error retrieving products: ', err))
   }
   // ProductProps
   setProductProps = (product) => {

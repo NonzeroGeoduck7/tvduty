@@ -6,7 +6,7 @@ function SeriesList(props) {
   return (
     <div>
       {props.series.map(c => <SeriesElement key={c.id} title={c.title} poster={c.poster} />)}
-     </div> 
+    </div> 
   ); 
 } 
 

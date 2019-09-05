@@ -27,7 +27,7 @@ const schema = new mongoose.Schema({
 		},
         lastUpdated: {
             type: Date,
-			required: [true, 'lastUpdated field is required'],
+			required: false,
             default: Date.now
         },
 	    // last episode out??

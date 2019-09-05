@@ -1,8 +1,9 @@
 // ProductTable.js
 import React, { Component } from 'react'
+import SeriesList from './SeriesList'
 export default class SeriesTable extends Component {
   state = {
-    products: [],
+    seriesList: [],
     inputs: [],
     newProduct: {
       title: '',
@@ -10,21 +11,21 @@ export default class SeriesTable extends Component {
     }
   }
 componentDidMount() {
-  // Fetch the products from the database
+  // Fetch the Series from the database
   fetch('/.netlify/functions/seriesRead')
     .then(res => res.json())
     .then(response => {
       console.log(response.msg)
       const inputs = [...this.state.inputs],
-            products = response.data
+            seriesList = response.data
         
-      products.forEach(product => {
-        const productProps = this.setProductProps(product)
+      seriesList.forEach(series => {
+        const productProps = this.setProductProps(series)
         inputs.push(productProps)
       })
         
       this.setState({ 
-        products,
+        seriesList,
         inputs
       })
     })
@@ -45,7 +46,7 @@ componentDidMount() {
   }
   
   compareProductProps = (i) => {
-    const product = this.state.products[i],
+    const product = this.state.seriesList[i],
           input = this.state.inputs[i]
     
     let compare = false
@@ -109,7 +110,7 @@ componentDidMount() {
         console.log(response.msg)
       
         const product = response.data,
-              products = [...this.state.products],
+              seriesList = [...this.state.seriesList],
               inputs = [...this.state.inputs],
               newProduct = {
                 title: '',
@@ -118,23 +119,23 @@ componentDidMount() {
               productProps = this.setProductProps(product)
         
         inputs.push(productProps)
-        products.push(product)
+        seriesList.push(product)
         
         this.setState({ 
-          products: products,
+          seriesList: seriesList,
           inputs: inputs,
           newProduct: newProduct
         })
       })
-      .catch(err => console.log('Product.create API error: ', err))
+      .catch(err => console.log('Series.create API error: ', err))
   }
   
   handleUpdate = (e) => {
-    const products = [...this.state.products],
+    const seriesList = [...this.state.seriesList],
           inputs = [...this.state.inputs],
           index = parseInt(e.target.dataset.id),
           productData = inputs[index],
-          oid = this.state.products[index]._id
+          oid = this.state.series[index]._id
     
     // Set product id and product data as JSON string
     const data = JSON.stringify({ id: oid, series: productData })
@@ -146,10 +147,10 @@ componentDidMount() {
         
         // Set updated product props
         inputs[index] = this.setProductProps(product)
-        products[index] = product
+        seriesList[index] = product
       
         this.setState({
-          products,
+          seriesList,
           inputs
         })
       })
@@ -158,14 +159,14 @@ componentDidMount() {
   
   handleDelete = (e) => {
     const index = parseInt(e.target.dataset.id),
-          id = this.state.products[index]._id
+          id = this.state.series[index]._id
     
     this.postAPI('productDelete', id)
       .then(response => {
         console.log(response.msg)
         
         const inputs = [...this.state.inputs],
-              products = [...this.state.products]
+              products = [...this.state.series]
         
         inputs.splice(index, 1)
         products.splice(index, 1)
@@ -180,41 +181,41 @@ componentDidMount() {
   
   render() {
     return (
-      <table>
-        <thead>
-          <tr>
-            <th>Product Name</th>
-            <th>Price</th>
-            <th>Options</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <input name='name' type='string' value={this.state.newProduct.name} onChange={this.handleNewInputChange} />
-            </td>
-            <td>
-              <input name='price' type='number' value={this.state.newProduct.price} onChange={this.handleNewInputChange} />
-            </td>
-            <td>
-              <button onClick={this.handleCreate}>&#43;</button>
-            </td>
-          </tr>
-          {this.state.inputs.map((product, i) => {
-            return <tr key={'product_' + i}>
-              {Object.keys(product).map(key => {
-                return <td key={'key_' + key}>
-                  <input name={key} data-id={i} value={product[key]} onChange={this.handleInputChange} />
-                </td>
-                })}
-              <td>
-                {this.compareProductProps(i) && <button data-id={i} onClick={this.handleUpdate}>&#10004;</button>}
-                <button data-id={i} onClick={this.handleDelete}>&#128465;</button>
-              </td>
-            </tr>
-          })}
-        </tbody>
-      </table>
+	  <div>
+		  <table>
+		    <thead>
+			  <tr>
+			    <th>Series</th>
+			  </tr>
+		    </thead>
+		    <tbody>
+			  <SeriesList series={this.state.seriesList} />
+			</tbody>
+		  </table>
+		  <table>
+			<thead>
+			  <tr>
+				<th>Product Name</th>
+				<th>Price</th>
+				<th>Options</th>
+			  </tr>
+			</thead>
+			<tbody>
+			  <tr>
+				<td>
+				  <input name='name' type='string' value={this.state.newProduct.name} onChange={this.handleNewInputChange} />
+				</td>
+				<td>
+				  <input name='price' type='number' value={this.state.newProduct.price} onChange={this.handleNewInputChange} />
+				</td>
+				<td>
+				  <button onClick={this.handleCreate}>&#43;</button>
+				</td>
+			  </tr>
+			  
+			</tbody>
+		  </table>
+		</div>
     )
   }
 }

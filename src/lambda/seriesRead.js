@@ -1,18 +1,17 @@
-// productRead.js
+// seriesRead.js
 import mongoose from 'mongoose'
-// Load the server
 import db from './server'
-// Load the Product Model
 import Series from './seriesModel'
+
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   try {
     // Use Product.Model to find all products
-    const products = await Series.find(),
+    const series = await Series.find(),
           response = {
-            msg: "Products successfully found",
-            data: products
+            msg: 'Series successfully found',
+            data: series
           }
     
     return {
@@ -21,7 +20,7 @@ exports.handler = async (event, context) => {
     }
     
   } catch (err) {
-    console.log(err) // output to netlify function log
+    console.log(err)
     return {
       statusCode: 500,
       body: JSON.stringify({msg: err.message})

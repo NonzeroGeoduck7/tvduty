@@ -1,8 +1,6 @@
-// productUpdate.js
+// seriesUpdate.js
 import mongoose from 'mongoose'
-// Load the server
 import db from './server'
-// Load the Product Model
 import Series from './seriesModel'
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
@@ -13,7 +11,7 @@ exports.handler = async (event, context) => {
           id = data.id,
           series = data.series,
           response = {
-            msg: "Product successfully updated",
+            msg: "Series successfully updated",
             data: series
           }
     

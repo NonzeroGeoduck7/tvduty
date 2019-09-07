@@ -1,4 +1,4 @@
-// episodeModel.js
+// episodesModel.js
 // general episode stats
 import mongoose from 'mongoose'
 // Set Episodes Schema
@@ -23,7 +23,7 @@ const schema = new mongoose.Schema({
         },
 		seriesId: {
 		  type: Number,
-		  required: [true, 'extId field is required']
+		  required: [true, 'seriesId field is required']
 		},
 		image: {
 		  type: String,
@@ -31,6 +31,14 @@ const schema = new mongoose.Schema({
 		},
 	    airstamp: {
 		  type: String,
+		  required: false,
+		},
+		runtime: {
+		  type: Number,
+		  required: false,
+		},
+		timeWatched: {
+		  type: Date,
 		  required: false,
 		},
         summary: {

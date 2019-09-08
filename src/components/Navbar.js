@@ -18,7 +18,7 @@ const NavBar = () => {
         </button>
       )}
 	  
-	  {user && <p>{user.name} - {user.sub}</p>}
+	  {user && <p>logged in as {user.name} - {user.sub}</p>}
 
       {isAuthenticated && <button onClick={() => logout()}>Log out</button>}
     </div>

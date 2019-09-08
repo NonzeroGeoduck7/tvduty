@@ -11,13 +11,11 @@ function SeriesElement(props) {
   
   return (
 	  <div key={props.key}>
-	  	<a href="/">
         <img width={300}
 	  		 src={props.poster}
 	         alt={'poster_' + props.title}
 	  		 onClick={() => func(props.title)}
 	    />
-		</a>
 	  </div>
   );
 }

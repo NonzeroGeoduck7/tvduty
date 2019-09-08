@@ -7,13 +7,14 @@ import { BrowserRouter, Route, Switch } from "react-router-dom";
 
 import SeriesTable from './components/SeriesTable'
 import Profile from './components/Profile'
+import Add from './components/Add'
 
 function App() {
   const { loading } = useAuth0();
 
   if (loading) {
     return (
-      <div>Loading...</div>
+      <div>Authorizing user...</div>
     );
   }
 
@@ -25,6 +26,7 @@ function App() {
         </header>
         <Switch>
           <Route path="/" exact component={SeriesTable} />
+	  	  <Route path="/add" component={Add} />
           <Route path="/profile" component={Profile} />
         </Switch>
       </BrowserRouter>

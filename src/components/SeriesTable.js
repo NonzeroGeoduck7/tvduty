@@ -1,4 +1,4 @@
-// ProductTable.js
+// SeriesTable.js
 import React, { Component } from 'react'
 import SeriesList from './SeriesList'
 export default class SeriesTable extends Component {
@@ -102,8 +102,11 @@ export default class SeriesTable extends Component {
       .catch(err => err)
   }
   
-  // CRUD Handlers
-  handleCreate = () => {
+  addNewSeries = () => {
+	  
+	  // move to /add
+	  
+	/*
     const newProduct = this.state.newProduct
     
     this.postAPI('seriesCreate', newProduct)
@@ -129,6 +132,7 @@ export default class SeriesTable extends Component {
         })
       })
       .catch(err => console.log('Series.create API error: ', err))
+	  */
   }
   
   handleUpdate = (e) => {
@@ -193,29 +197,9 @@ export default class SeriesTable extends Component {
 			  <SeriesList series={this.state.seriesList} />
 			</tbody>
 		  </table>
-		  <table>
-			<thead>
-			  <tr>
-				<th>Product Name</th>
-				<th>Price</th>
-				<th>Options</th>
-			  </tr>
-			</thead>
-			<tbody>
-			  <tr>
-				<td>
-				  <input name='name' type='string' value={this.state.newProduct.name} onChange={this.handleNewInputChange} />
-				</td>
-				<td>
-				  <input name='price' type='number' value={this.state.newProduct.price} onChange={this.handleNewInputChange} />
-				</td>
-				<td>
-				  <button onClick={this.handleCreate}>&#43;</button>
-				</td>
-			  </tr>
-			  
-			</tbody>
-		  </table>
+		  <a href="/add">
+		  	<button onClick={this.addNewSeries}>&#43;</button>
+		  </a>
 		</div>
     )
   }

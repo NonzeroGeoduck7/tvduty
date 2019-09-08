@@ -1,6 +1,7 @@
-// src/Add.js
+// src/components/Add.js
 // add new series to tracked list
 import React, { useState } from 'react'
+import { Link } from "react-router-dom";
 import { useAuth0 } from "../react-auth0-wrapper";
 
 function Add () {
@@ -45,6 +46,11 @@ function Add () {
 	  </div>
 	  {results.map(c => <div><button onClick={()=>addSeries(c.show.id)}>&#43;</button><label>{c.show.name} - {c.show.status}</label></div>
 	  ) }
+	  <div>
+		  <Link to="/">
+		  	<button>Go back</button>
+		  </Link>
+      </div>
 	</div>
   )
 }

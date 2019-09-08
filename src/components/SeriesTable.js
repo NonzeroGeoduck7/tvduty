@@ -1,6 +1,7 @@
 // SeriesTable.js
 import React, { Component } from 'react'
 import SeriesList from './SeriesList'
+import { Link } from "react-router-dom";
 export default class SeriesTable extends Component {
   state = {
     seriesList: [],
@@ -197,9 +198,9 @@ export default class SeriesTable extends Component {
 			  <SeriesList series={this.state.seriesList} />
 			</tbody>
 		  </table>
-		  <a href="/add">
+		  <Link to="/add">
 		  	<button onClick={this.addNewSeries}>&#43;</button>
-		  </a>
+		  </Link>
 		</div>
     )
   }

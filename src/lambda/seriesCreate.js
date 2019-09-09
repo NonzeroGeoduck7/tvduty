@@ -30,10 +30,11 @@ exports.handler = async (event, context, callback) => {
   try {
     const data = JSON.parse(event.body);
     const res = await showLookup(data.id);
-    const {name: title, id: extId, image, status} = res,
+    const {name: title, id: extId, image, status, schedule} = res,
           id = mongoose.Types.ObjectId(),
 		  lastUpdated = new Date('1970-12-12'),
 		  nrOfEpisodes = 0,
+//		  schedule = schedule!=null?schedule.days:null,
 		  userId = data.userId,
           series = {
             _id: id,

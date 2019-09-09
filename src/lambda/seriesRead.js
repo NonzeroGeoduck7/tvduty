@@ -8,12 +8,22 @@ exports.handler = async (event, context) => {
   
   try {
     // Use Series.Model to find all series matching the user
-    const series = await Series.find(),
-          response = {
+    const series = await Series.aggregate([
+	    {
+	  	  $lookup: {
+	  	    from: 'userseries',
+	  	    localField: 'extId',
+	  	    foreignField: 'seriesId',
+	  	    as: 'userseries'
+	      }
+	    }
+	  ]);
+	  
+    const response = {
             msg: 'Series successfully found',
             data: series
           }
-    
+    console.log(JSON.stringify(series))
     return {
       statusCode: 200,
       body: JSON.stringify(response)

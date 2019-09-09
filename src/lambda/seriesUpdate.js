@@ -8,7 +8,7 @@ exports.handler = async (event, context) => {
   
   try {
     // Parse the ID
-    const data = JSON.parse(JSON.parse(event.body)),
+    const data = JSON.parse(event.body),
           id = data.id,
           series = data.series,
           response = {

@@ -103,39 +103,6 @@ export default class SeriesTable extends Component {
       .catch(err => err)
   }
   
-  addNewSeries = () => {
-	  
-	  // move to /add
-	  
-	/*
-    const newProduct = this.state.newProduct
-    
-    this.postAPI('seriesCreate', newProduct)
-      .then(response => {
-        console.log(response.msg)
-      
-        const product = response.data,
-              seriesList = [...this.state.seriesList],
-              inputs = [...this.state.inputs],
-              newProduct = {
-                title: '',
-                nrOfEpisodes: 0
-              },
-              productProps = this.setProductProps(product)
-        
-        inputs.push(productProps)
-        seriesList.push(product)
-        
-        this.setState({ 
-          seriesList: seriesList,
-          inputs: inputs,
-          newProduct: newProduct
-        })
-      })
-      .catch(err => console.log('Series.create API error: ', err))
-	  */
-  }
-  
   handleUpdate = (e) => {
     const seriesList = [...this.state.seriesList],
           inputs = [...this.state.inputs],
@@ -199,7 +166,7 @@ export default class SeriesTable extends Component {
 			</tbody>
 		  </table>
 		  <Link to="/add">
-		  	<button onClick={this.addNewSeries}>&#43;</button>
+		  	<button>&#43;</button>
 		  </Link>
 		</div>
     )

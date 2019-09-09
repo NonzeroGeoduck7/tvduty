@@ -17,7 +17,7 @@ function Add () {
   }
   
   async function startSearch() {
-	  const API_ENDPOINT = "http://api.tvmaze.com/search/shows?q="
+	  const API_ENDPOINT = "https://api.tvmaze.com/search/shows?q="
 	  
 	  let q = input
 	  
@@ -34,8 +34,25 @@ function Add () {
 	  console.log("search complete")
   }
   
+  function postAPI (source, data) {
+     return fetch('/.netlify/functions/' + source, {
+         method: 'post',
+         body: JSON.stringify(data)
+       })
+       .then(res => res.json())
+       .catch(err => err)
+  }
+  
   function addSeries(id) {
 	  console.log("add series with id: "+id+" to user "+user.sub)
+	  
+	  console.log(JSON.stringify({id: id, userId: user.sub}))
+	  
+	  postAPI('seriesCreate', {id: id, userId: user.sub})
+      .then(response => {
+        console.log(response.msg)
+      })
+      .catch(err => console.log('Series.create API error: ', err))
   }
   
   return (

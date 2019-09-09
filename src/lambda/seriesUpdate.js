@@ -2,6 +2,7 @@
 import mongoose from 'mongoose'
 import db from './server'
 import Series from './seriesModel'
+
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
@@ -15,7 +16,7 @@ exports.handler = async (event, context) => {
             data: series
           }
     
-    // Use Product.Model and id to update 
+    // Use Series.Model and id to update 
     await Series.findOneAndUpdate({_id: id}, series)
     
     return {
@@ -23,7 +24,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(response)
     }
   } catch(err) {
-    console.log('series.update', err) // output to netlify function log
+    console.log('series.update', err)
     return {
       statusCode: 500,
       body: JSON.stringify({msg: err.message})

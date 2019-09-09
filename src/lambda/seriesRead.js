@@ -7,7 +7,7 @@ exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   try {
-    // Use Series.Model to find all products
+    // Use Series.Model to find all series matching the user
     const series = await Series.find(),
           response = {
             msg: 'Series successfully found',

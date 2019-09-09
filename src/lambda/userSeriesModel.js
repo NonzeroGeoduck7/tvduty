@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 // Set UserSeries Schema
 const schema = new mongoose.Schema({
         _id: mongoose.Schema.Types.ObjectId,
-        user: {
+        userId: {
           type: String,
           required: [true, 'user field is required']
         },

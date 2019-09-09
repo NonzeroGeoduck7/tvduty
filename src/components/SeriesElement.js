@@ -10,7 +10,7 @@ function SeriesElement(props) {
   }
   
   return (
-	  <div key={props.key}>
+	  <div>
         <img width={300}
 	  		 src={props.poster}
 	         alt={'poster_' + props.title}

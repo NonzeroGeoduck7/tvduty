@@ -23,7 +23,7 @@ exports.handler = async (event, context) => {
             msg: 'Series successfully found',
             data: series
           }
-    console.log(JSON.stringify(series))
+    
     return {
       statusCode: 200,
       body: JSON.stringify(response)

@@ -1,7 +1,7 @@
 {
-  "short_name": "tvDuty",
-  "name": "tvDuty - not your duty to keep track anymore",
-	"gcm_sender_id": "539876079581",
+  "name": "tvDuty",
+  "short_name": "tvduty40",
+  "gcm_sender_id": "539876079581",
   "icons": [
     {
       "src": "favicon.ico",

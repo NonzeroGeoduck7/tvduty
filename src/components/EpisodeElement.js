@@ -1,12 +1,12 @@
 // src/components/EpisodeElement.js
 
-import React, { useState } from 'react'
+import React from 'react'
 
 const EpisodeElement = (props) => {
   
   return (
     <div>
-      {props.episode}
+      {JSON.stringify(props.episode.title)}
     </div>
   );
 }

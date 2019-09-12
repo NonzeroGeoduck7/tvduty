@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-
+import { Link } from "react-router-dom";
 
 
 function SeriesElement(props) {
@@ -11,11 +11,13 @@ function SeriesElement(props) {
   
   return (
 	  <div>
-        <img width={300}
+	    <Link to={"/series/"+props.extId}>
+          <img width={300}
 	  		 src={props.poster}
 	         alt={'poster_' + props.title}
 	  		 onClick={() => func(props.title)}
-	    />
+	      />
+	  	</Link>
 	  </div>
   );
 }

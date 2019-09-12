@@ -6,6 +6,7 @@ import { useAuth0 } from "./react-auth0-wrapper";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 
 import SeriesTable from './components/SeriesTable'
+import SeriesInfo from './components/SeriesInfo'
 import Add from './components/Add'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         </header>
 	  	{isAuthenticated && <Switch>
           <Route path="/" exact component={SeriesTable} />
+	  	  <Route path="/series/:extId" component={SeriesInfo} />
 	  	  <Route path="/add" component={Add} />
         </Switch>}
 	    {!isAuthenticated && <div>Please log in to see this page</div>}

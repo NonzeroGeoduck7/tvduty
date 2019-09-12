@@ -1,6 +1,6 @@
 // SeriesTable.js
 import React, { useState, useEffect } from 'react'
-import SeriesList from './SeriesList'
+import SeriesElement from './SeriesElement'
 import { Link } from "react-router-dom";
 
 import { useAuth0 } from "../react-auth0-wrapper";
@@ -24,11 +24,11 @@ function SeriesTable() {
 		.catch(err => console.log('Error retrieving products: ', err))
 	  
   }, [user.sub]);
-  
+	
   return (
     <div>
   	  <p>Series</p>
-	  <SeriesList series={seriesList} />
+	  {seriesList.map(c => <SeriesElement key={c.extId} title={c.title} poster={c.poster} extId={c.extId} />)}
   	  <Link to="/add">
   	    <button>&#43;</button>
   	  </Link>

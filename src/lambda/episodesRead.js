@@ -16,7 +16,6 @@ exports.handler = async (event, context) => {
   
   try {
     // Use Episodes.Model to find all series matching the user
-	  console.log(seriesId)
     const episodes = await Episodes.aggregate([
 	    {
 	  	  $lookup: {
@@ -30,10 +29,12 @@ exports.handler = async (event, context) => {
 	  ]);
 	  
     const response = {
-            msg: 'Episodes successfully found',
-            data: episodes
-          }
+      msg: 'Episodes successfully found',
+      data: episodes
+    }
     
+	console.log('Episodes successfully read from DB.')
+	
     return {
       statusCode: 200,
       body: JSON.stringify(response)

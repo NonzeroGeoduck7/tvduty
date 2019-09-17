@@ -43,14 +43,18 @@ function Add () {
        .catch(err => err)
   }
   
-  function addSeries(id) {
+  async function addSeries(id) {
 	  console.log("add series with id: "+id+" to user "+user.sub)
 	  
-	  console.log(JSON.stringify({id: id, userId: user.sub}))
-	  
-	  postAPI('seriesCreate', {id: id, userId: user.sub})
+	  await postAPI('seriesCreate', {id: id, userId: user.sub})
       .then(response => {
-        console.log(response.msg)
+        console.log("response from seriesCreate: " + response.msg)
+      })
+      .catch(err => console.log('Series.create API error: ', err))
+	  
+	  await postAPI('deploy-succeeded', {})
+      .then(response => {
+        console.log("response from deploy-succeeded: " + response.msg)
       })
       .catch(err => console.log('Series.create API error: ', err))
   }

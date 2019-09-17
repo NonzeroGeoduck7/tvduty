@@ -61,7 +61,6 @@ exports.handler = async (event, context, callback) => {
     
     // Use Series.Model to create a new product
 	var seriesInDb = await Series.countDocuments({title: series.title})
-	console.log(seriesInDb)
 	if (seriesInDb < 1) {
     	await Series.create(series)
 	} else {
@@ -69,15 +68,11 @@ exports.handler = async (event, context, callback) => {
 	}
     
 	var userSeriesInDb = await UserSeries.countDocuments({userId: userId, seriesId: extId})
-	console.log()
 	if (userSeriesInDb < 1) {
     	await UserSeries.create(userSeries)
 	} else {
 		console.log('series with id ' + extId + ' and user ' + userId + 'already in database, skipped.')
 	}
-	  
-	await fetch('https://tvduty.netlify.com/.netlify/functions/deploy-succeeded')
-		.catch(err => console.log('Error running deploy-successful function after create series: ', err))
 	
     return {
       statusCode: 201,

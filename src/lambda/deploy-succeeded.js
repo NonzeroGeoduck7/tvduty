@@ -37,6 +37,8 @@ function log(str) {
 }
 
 exports.handler = async (event, context) => {
+	context.callbackWaitsForEmptyEventLoop = false
+	
 	try {
 		// mongoDB
 		const seriesList = await Series.find()
@@ -47,26 +49,26 @@ exports.handler = async (event, context) => {
 		log('API accessed.')
 		
 		if (seriesList.length > 0 && typeof response !== 'undefined') {
-			seriesList.forEach(async function(series) {
-				
+			for (const series of seriesList){
 				try {
 					// measurement ms/s
 					const seriesResponseDate = response[series.extId]*1000
 
 					if(Date.parse(series.lastUpdated) < seriesResponseDate){
 						// episodes need to be updated
-						log('[' + series.title + '] Update necessary.')
 
 						let extId = series.extId
 						//log('[' + series.title + '] extId: '+ extId + '.')
 						//let seriesId = extId.replace("/[^0-9]/gim","").trim()
 						let seriesId = extId
+						log('[' + series.title + '] Update necessary: ' + seriesId)
+						
 						try{
-						    let r = await Episodes.deleteMany({"seriesId":seriesId})
+						    let r = await Episodes.deleteMany({seriesId:seriesId});
 						    log('[' + series.title + '] deleteMany: ' + JSON.stringify(r))
 						    log('[' + series.title + '] All episodes dropped.')
 						} catch (error) {
-							log('[' + series.title + '] ' + JSON.stringify(error))
+							log('[' + series.title + '] del error: ' + JSON.stringify(error))
 						}
 
 						let newEps = await getEpisodesForSeries(seriesId)
@@ -99,7 +101,7 @@ exports.handler = async (event, context) => {
 						let res = await Series.updateOne({"extId":series.extId}, series)
 						log('[' + series.title + '] ' + res.nModified + ' series modified, should be 1')
 						if (res.nModified != 1) {
-							throw "series updateDate has not been updated"
+							return { statusCode: 500, body: "series updateDate has not been updated" }
 						}
 					
 					} else {
@@ -108,12 +110,13 @@ exports.handler = async (event, context) => {
 				} catch(err){
 					log('error while updating series with id: ' + series.extId + ' - ' + err)
 				}
-			})
+			}
 		}
 		
+		log('end successfullyy.')
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err){
-		console.log(err)
+		log('end: ' + err)
 		return { statusCode: 500, body: String(err) }
 	}
 };

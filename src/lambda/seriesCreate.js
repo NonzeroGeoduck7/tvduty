@@ -59,7 +59,7 @@ exports.handler = async (event, context, callback) => {
           }
     
     // Use Series.Model to create a new product
-	var seriesInDb = await Series.count({title: series.title})
+	var seriesInDb = await Series.countDocuments({title: series.title})
 	console.log(seriesInDb)
 	if (seriesInDb < 1) {
     	await Series.create(series)
@@ -67,7 +67,7 @@ exports.handler = async (event, context, callback) => {
 		console.log('series with id ' + extId + ' already in database, skipped.')
 	}
     
-	var userSeriesInDb = await UserSeries.count({userId: userId, seriesId: extId})
+	var userSeriesInDb = await UserSeries.countDocuments({userId: userId, seriesId: extId})
 	console.log()
 	if (userSeriesInDb < 1) {
     	await UserSeries.create(userSeries)

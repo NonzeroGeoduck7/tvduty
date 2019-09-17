@@ -34,6 +34,7 @@ exports.handler = async (event, context, callback) => {
           id = mongoose.Types.ObjectId(),
 		  lastUpdated = new Date('1970-12-12'),
 		  nrOfEpisodes = 0,
+		  posterLink = image!=null?image.original.replace("http://","https://"):null,
 //		  schedule = schedule!=null?schedule.days:null,
 		  userId = data.userId,
           series = {
@@ -42,7 +43,7 @@ exports.handler = async (event, context, callback) => {
             nrOfEpisodes: nrOfEpisodes,
 			extId: extId,
 			status: status,
-			poster: image!=null?image.original:null,
+			poster: posterLink,
 			lastUpdated: lastUpdated,
             __v: 0
           },

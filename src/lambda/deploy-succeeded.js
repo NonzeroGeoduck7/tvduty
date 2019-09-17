@@ -38,7 +38,6 @@ function log(str) {
 
 exports.handler = async (event, context) => {
 	try {
-		
 		// mongoDB
 		const seriesList = await Series.find()
 		log('Found series: ' + seriesList.length)
@@ -62,8 +61,13 @@ exports.handler = async (event, context) => {
 						//log('[' + series.title + '] extId: '+ extId + '.')
 						//let seriesId = extId.replace("/[^0-9]/gim","").trim()
 						let seriesId = extId
-						await Episodes.deleteMany({"seriesId":seriesId})
-						log('[' + series.title + '] All episodes dropped.')
+						try{
+						    let r = await Episodes.deleteMany({"seriesId":seriesId})
+						    log('[' + series.title + '] deleteMany: ' + JSON.stringify(r))
+						    log('[' + series.title + '] All episodes dropped.')
+						} catch (error) {
+							log('[' + series.title + '] ' + JSON.stringify(error))
+						}
 
 						let newEps = await getEpisodesForSeries(seriesId)
 						log('[' + series.title + '] New episodes fetched.')
@@ -76,7 +80,7 @@ exports.handler = async (event, context) => {
 								"seasonNr":ep.season,
 								"episodeNr":ep.number,
 								"seriesId":seriesId,
-								"image":ep.image!=null?ep.image.original:null,
+								"image":ep.image!=null?ep.image.original.replace("http://","https://"):null,
 								"airstamp":ep.airstamp,
 								"runtime":ep.runtime,
 								"summary":ep.summary
@@ -93,7 +97,7 @@ exports.handler = async (event, context) => {
 						// - also check airdate
 						
 						let res = await Series.updateOne({"extId":series.extId}, series)
-						log('[' + series.title + '] ' + res.nModified + ' series modified.')
+						log('[' + series.title + '] ' + res.nModified + ' series modified, should be 1')
 						if (res.nModified != 1) {
 							throw "series updateDate has not been updated"
 						}
@@ -102,7 +106,7 @@ exports.handler = async (event, context) => {
 						log('[' + series.title + '] No update necessary.')
 					}
 				} catch(err){
-					log(err)
+					log('error while updating series with id: ' + series.extId + ' - ' + err)
 				}
 			})
 		}

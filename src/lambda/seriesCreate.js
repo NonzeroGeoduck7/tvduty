@@ -75,7 +75,7 @@ exports.handler = async (event, context, callback) => {
 		console.log('series with id ' + extId + ' and user ' + userId + 'already in database, skipped.')
 	}
 	  
-	await fetch('http://localhost:3000/.netlify/functions/deploy-succeeded')
+	await fetch('https://tvduty.netlify.com/.netlify/functions/deploy-succeeded')
 		.catch(err => console.log('Error running deploy-successful function after create series: ', err))
 	
     return {

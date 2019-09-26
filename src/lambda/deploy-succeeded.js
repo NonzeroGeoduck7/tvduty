@@ -7,7 +7,10 @@ import Episodes from './episodesModel'
 const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows';
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/';
 
-
+const dotenv = require('dotenv').config()
+const SparkPost = require('sparkpost');
+const euClient = new SparkPost('352e7bf7523b7a883307c71824e931009345904f');
+	
 async function getTvMazeData() {
 	let data = await fetch(API_ENDPOINT_UPDATE, {
 		  method: 'GET',
@@ -30,6 +33,30 @@ async function getEpisodesForSeries(seriesId) {
 	})
 	.catch(err => console.log('reading from ' + API_ENDPOINT + ' failed: ', err))
 	return data.json()	
+}
+
+function sendEmail() {
+
+	euClient.transmissions.send({
+		options: {
+		  sandbox: true
+		},
+		content: {
+		  subject: 'Hello, World!',
+		  html:'<html><body><p>This is a status mail. deploy finished.</p></body></html>'
+		},
+		recipients: [
+		  {address: 'andreasroth@hispeed.ch'}
+		]
+	  })
+	  .then(data => {
+		console.log('mail successfully sent!');
+		console.log(data);
+	  })
+	  .catch(err => {
+		console.log('error while sending mail');
+		console.log(err);
+	  });
 }
 
 function log(str) {
@@ -113,7 +140,10 @@ exports.handler = async (event, context) => {
 			}
 		}
 		
-		log('end successfullyy.')
+		log('end successfully. Send status email now.')
+		await sendEmail();
+		log('mail sent')
+		
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err){
 		log('end: ' + err)

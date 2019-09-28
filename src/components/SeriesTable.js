@@ -5,10 +5,28 @@ import { Link } from "react-router-dom";
 
 import { useAuth0 } from "../react-auth0-wrapper";
 
+function getWindowDimensions() {
+	const { innerWidth: width, innerHeight: height } = window;
+	return {
+	  width,
+	  height
+	};
+  }
+
 function SeriesTable() {
 	
   let [seriesList, setSeriesList] = useState([])
+  let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
+
   const { user } = useAuth0();
+  useEffect(() => {
+    function handleResize() {
+      setWindowDimensions(getWindowDimensions());
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // replaces componentDidMount -> reload when user.sub changes
   useEffect(() => {
@@ -25,10 +43,12 @@ function SeriesTable() {
 	  
   }, [user.sub]);
 	
+  const { width, height } = windowDimensions;
+
   return (
     <div>
-  	  <p>Series</p>
-	  {seriesList.map(c => <SeriesElement key={c.extId} title={c.title} poster={c.poster} extId={c.extId} />)}
+  	  <p>Screen size: {width} x {height}</p>
+	  {seriesList.map(c => <SeriesElement key={c.extId} height={height / 3} title={c.title} poster={c.poster} extId={c.extId} />)}
   	  <Link to="/add">
   	    <button>&#43;</button>
   	  </Link>

@@ -9,7 +9,7 @@ const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/';
 
 const dotenv = require('dotenv').config()
 const SparkPost = require('sparkpost');
-const euClient = new SparkPost('352e7bf7523b7a883307c71824e931009345904f');
+const euClient = new SparkPost(process.env.SPARKPOST_API_KEY);
 	
 async function getTvMazeData() {
 	let data = await fetch(API_ENDPOINT_UPDATE, {
@@ -43,6 +43,7 @@ function sendEmail() {
 		},
 		content: {
 		  subject: 'Hello, World!',
+		  from: 'support@sparkpostbox.com',
 		  html:'<html><body><p>This is a status mail. deploy finished.</p></body></html>'
 		},
 		recipients: [

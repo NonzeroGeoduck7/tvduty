@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 
 function SeriesElement(props) {
-	
+
   function func(text) {
   	console.log("func: "+text)
   }
@@ -12,19 +12,24 @@ function SeriesElement(props) {
   return (
 	  <div>
 	    <Link to={"/series/"+props.extId}>
-          <img width={300}
+          <img height={props.height} width={props.height*3/4}
 	  		 src={props.poster}
 	         alt={'poster_' + props.title}
 	  		 onClick={() => func(props.title)}
 	      />
 	  	</Link>
+		  
+		  <label>
+			  {props.title}
+		  </label>
 	  </div>
   );
 }
 
 SeriesElement.propTypes = {
   title: PropTypes.string.isRequired,
-  poster: PropTypes.string.isRequired
+  poster: PropTypes.string.isRequired,
+  height: PropTypes.number.isRequired,
 };
 
 export default SeriesElement;

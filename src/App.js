@@ -9,7 +9,7 @@ import SeriesTable from './components/SeriesTable'
 import SeriesInfo from './components/SeriesInfo'
 import Add from './components/Add'
 
-function App() {
+function App(props) {
   const { isAuthenticated, loading } = useAuth0();
 
   if (loading) {

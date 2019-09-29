@@ -20,7 +20,7 @@ function SeriesElement(props) {
 	  	</Link>
 		  
 		  <label>
-			  {props.title}
+			  {props.title} -> ep: {props.currentEpisode}/? ({props.currentEpisode/1}%)
 		  </label>
 	  </div>
   );

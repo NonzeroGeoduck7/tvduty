@@ -71,7 +71,7 @@ function Add () {
 		  <Link to="/">
 		  	<button>Go back</button>
 		  </Link>
-      </div>
+    </div>
 	</div>
   )
 }

@@ -30,7 +30,7 @@ function SeriesTable() {
 
   // replaces componentDidMount -> reload when user.sub changes
   useEffect(() => {
-      console.log("useEffect method completed, showsTable updated.")
+    console.log("useEffect method completed, showsTable updated.")
 	
 	  // Fetch the Series from the database
 	  fetch('/.netlify/functions/seriesRead')
@@ -48,7 +48,16 @@ function SeriesTable() {
   return (
     <div>
   	  <p>Screen size: {width} x {height}</p>
-	  {seriesList.map(c => <SeriesElement key={c.extId} height={height / 3} title={c.title} poster={c.poster} extId={c.extId} />)}
+      {seriesList.map(c => 
+        <SeriesElement
+          key={c.extId}
+          height={height / 3}
+          currentEpisode={c.userseries[0].currentEpisode}
+          title={c.title}
+          poster={c.poster}
+          extId={c.extId} />
+      )}
+
   	  <Link to="/add">
   	    <button>&#43;</button>
   	  </Link>

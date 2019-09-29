@@ -1,35 +1,35 @@
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'
 import mongoose from 'mongoose'
 import db from './server'
 import Series from './seriesModel'
 import Episodes from './episodesModel'
 
-const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows';
-const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/';
+const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
+const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
 
 const dotenv = require('dotenv').config()
-const SparkPost = require('sparkpost');
-const euClient = new SparkPost(process.env.SPARKPOST_API_KEY);
+const SparkPost = require('sparkpost')
+const euClient = new SparkPost(process.env.SPARKPOST_API_KEY)
 	
 async function getTvMazeData() {
 	let data = await fetch(API_ENDPOINT_UPDATE, {
-		  method: 'GET',
-		  headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json',
-		  },
+		method: 'GET',
+		headers: {
+		'Accept': 'application/json',
+		'Content-Type': 'application/json',
+		},
 	})
 	.catch(err => console.log('reading from ' + API_ENDPOINT + ' failed: ', err))
 	return data.json()	
 }
 
-async function getEpisodesForSeries(seriesId) {
-	let data = await fetch(API_ENDPOINT_EPISODES + seriesId + '/episodes', {
-		  method: 'GET',
-		  headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json',
-		  },
+async function getInformationForSeries(seriesId) {
+	let data = await fetch(API_ENDPOINT_EPISODES + seriesId + '?embed=episodes', {
+		method: 'GET',
+		headers: {
+		'Accept': 'application/json',
+		'Content-Type': 'application/json',
+		},
 	})
 	.catch(err => console.log('reading from ' + API_ENDPOINT + ' failed: ', err))
 	return data.json()	
@@ -42,22 +42,22 @@ function sendEmail() {
 		  sandbox: true
 		},
 		content: {
-		  subject: 'Hello, World!',
-		  from: 'support@sparkpostbox.com',
-		  html:'<html><body><p>This is a status mail. deploy finished.</p></body></html>'
+		  subject: '[tvDuty] Status information',
+		  from: 'tvduty@sparkpostbox.com',
+		  html:'<html><body><p>This is a status mail. Daily deploy has just finished.</p></body></html>'
 		},
 		recipients: [
 		  {address: 'andreasroth@hispeed.ch'}
 		]
 	  })
 	  .then(data => {
-		console.log('mail successfully sent!');
-		console.log(data);
+		console.log('mail successfully sent!')
+		console.log(data)
 	  })
 	  .catch(err => {
-		console.log('error while sending mail');
-		console.log(err);
-	  });
+		console.log('error while sending mail')
+		console.log(err)
+	  })
 }
 
 function log(str) {
@@ -92,14 +92,15 @@ exports.handler = async (event, context) => {
 						log('[' + series.title + '] Update necessary: ' + seriesId)
 						
 						try{
-						    let r = await Episodes.deleteMany({seriesId:seriesId});
+						    let r = await Episodes.deleteMany({seriesId:seriesId})
 						    log('[' + series.title + '] deleteMany: ' + JSON.stringify(r))
 						    log('[' + series.title + '] All episodes dropped.')
 						} catch (error) {
 							log('[' + series.title + '] del error: ' + JSON.stringify(error))
 						}
 
-						let newEps = await getEpisodesForSeries(seriesId)
+						let info = await getInformationForSeries(seriesId)
+						let newEps = info._embedded.episodes
 						log('[' + series.title + '] New episodes fetched.')
 
 						var eps = []
@@ -119,7 +120,10 @@ exports.handler = async (event, context) => {
 						await Episodes.insertMany(eps)
 						log('[' + series.title + '] New episodes inserted in DB.')
 
+						// series object is changed and written back to db, check for changes here.
 						series.lastUpdated = new Date()
+						series.status = info.status
+						series.poster = info.image!=null?info.image.original:null
 						
 						// TODO:
 						// - measure difference in episode.length and series.nrOfEpisodes
@@ -142,8 +146,7 @@ exports.handler = async (event, context) => {
 		}
 		
 		log('end successfully. Send status email now.')
-		await sendEmail();
-		log('mail sent')
+		sendEmail()
 		
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err){

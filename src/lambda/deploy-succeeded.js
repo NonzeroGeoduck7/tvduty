@@ -35,9 +35,9 @@ async function getInformationForSeries(seriesId) {
 	return data.json()	
 }
 
-function sendEmail() {
+async function sendEmail() {
 
-	euClient.transmissions.send({
+	await euClient.transmissions.send({
 		options: {
 		  sandbox: true
 		},
@@ -146,7 +146,7 @@ exports.handler = async (event, context) => {
 		}
 		
 		log('end successfully. Send status email now.')
-		sendEmail()
+		await sendEmail()
 		
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err){

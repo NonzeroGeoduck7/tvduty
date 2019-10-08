@@ -8,8 +8,6 @@ const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
 
 const dotenv = require('dotenv').config()
-const SparkPost = require('sparkpost')
-const euClient = new SparkPost(process.env.SPARKPOST_API_KEY)
 	
 async function getTvMazeData() {
 	let data = await fetch(API_ENDPOINT_UPDATE, {
@@ -35,29 +33,25 @@ async function getInformationForSeries(seriesId) {
 	return data.json()	
 }
 
-async function sendEmail() {
+const send = require('gmail-send')({
+	user: process.env.GMAIL_USERNAME,
+	pass: process.env.GMAIL_PASSWORD,
+	to:   'andreasroth@hispeed.ch',
+	subject: '[tvDuty] status',
+	text:    'deploy finished',         // Plain text
+	//html:    '<b>html text</b>'            // HTML
+	// files: [ filepath ],                  // Set filenames to attach (if you need to set attachment filename in email, see example below
+})
 
-	await euClient.transmissions.send({
-		options: {
-		  sandbox: true
-		},
-		content: {
-		  subject: '[tvDuty] Status information',
-		  from: 'tvduty@sparkpostbox.com',
-		  html:'<html><body><p>This is a status mail. Daily deploy has just finished.</p></body></html>'
-		},
-		recipients: [
-		  {address: 'andreasroth@hispeed.ch'}
-		]
-	  })
-	  .then(data => {
-		console.log('mail successfully sent!')
-		console.log(data)
-	  })
-	  .catch(err => {
-		console.log('error while sending mail')
-		console.log(err)
-	  })
+async function sendEmail() {
+	try {
+		const {result,full} = await send({ // Overriding default parameters
+			//subject: 'attached '+filepath,              // Override value set as default
+		})
+		console.log('sending mail successful: ' + result)
+	} catch(error) {
+		console.log('Error while sending email: ' + error)
+	}
 }
 
 function log(str) {

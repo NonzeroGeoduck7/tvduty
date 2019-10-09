@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import SeriesElement from './SeriesElement'
 import { Link } from "react-router-dom"
 import StackGrid from "react-stack-grid"
+import { trackWindowScroll } from 'react-lazy-load-image-component';
 
 import { useAuth0 } from "../react-auth0-wrapper"
 
@@ -14,7 +15,7 @@ function getWindowDimensions() {
     }
 }
 
-function SeriesTable() {
+function SeriesTable(scrollPosition) {
     
     let [seriesList, setSeriesList] = useState([])
     let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
@@ -57,6 +58,7 @@ function SeriesTable() {
             <StackGrid columnWidth={columnWidth}>
                 {seriesList.map(c => 
                     <SeriesElement
+                        scrollPosition={scrollPosition}
                         key={c.extId}
                         width={columnWidth/1.25}
                         currentEpisode={c.userseries[0].currentEpisode}
@@ -69,4 +71,4 @@ function SeriesTable() {
     )
 }
 
-export default SeriesTable
+export default trackWindowScroll(SeriesTable)

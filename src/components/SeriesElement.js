@@ -1,22 +1,23 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 import { Link } from "react-router-dom"
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import placeholder from '../img/placeholder.png';
 
+import 'react-lazy-load-image-component/src/effects/blur.css';
 
 function SeriesElement(props) {
-	
-	function func(text) {
-		console.log("func: "+text)
-	}
 	
   	return (
 	  	<div>
 		  	<div>
 				<Link to={"/series/"+props.extId}>
-					<img height={props.width*4/3} width={props.width}
+					<LazyLoadImage
+						scrollPosition={props.scrollPosition}
+						height={props.width*4/3} width={props.width}
+						placeholderSrc={placeholder}
+						effect="blur"
 						src={props.poster}
-						alt={'poster_' + props.title}
-						onClick={() => func(props.title)}
 					/>
 	  			</Link>
 			</div>
@@ -32,7 +33,6 @@ function SeriesElement(props) {
 
 SeriesElement.propTypes = {
   title: PropTypes.string.isRequired,
-  poster: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
 }
 

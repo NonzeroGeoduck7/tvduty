@@ -1,5 +1,5 @@
 // userModel.js
-// user - notification infos
+// user - Settings
 import mongoose from 'mongoose'
 // Set User Schema
 const schema = new mongoose.Schema({
@@ -8,9 +8,9 @@ const schema = new mongoose.Schema({
           type: String,
           required: [true, 'userId field is required']
         },
-        notificationId: {
-          type: Number,
-          required: [true, 'notificationId field is required']
+        email: {
+          type: String,
+          required: [true, 'email field is required']
         }
       }),
       User = mongoose.model('user', schema)

@@ -25,8 +25,13 @@ function EpisodeElement(props) {
       .catch(err => console.log('episodeWatched API error: ', err))
   }
 
+  const style = {
+    margin: "5px",
+    border: "2px solid lightblue",
+  }
+
   return (
-    <div>
+    <div style={style}>
       {!props.watched?"not":""} watched - {props.seasonNr}x{props.episodeNr}: {props.title}
       
       <button onClick={()=>markWatched(props.seriesId, props.seasonNr, props.episodeNr)}>&#10004;</button>

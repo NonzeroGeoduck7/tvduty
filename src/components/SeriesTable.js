@@ -44,6 +44,7 @@ function SeriesTable() {
     }, [user.sub])
     
     const { width, height } = windowDimensions
+    const columnWidth = 330
 
     return (
         <div>
@@ -53,11 +54,11 @@ function SeriesTable() {
                 <button>&#43;</button>
             </Link>
 
-            <StackGrid columnWidth={330}>
+            <StackGrid columnWidth={columnWidth}>
                 {seriesList.map(c => 
                     <SeriesElement
                         key={c.extId}
-                        height={height / (3)}
+                        width={columnWidth/1.25}
                         currentEpisode={c.userseries[0].currentEpisode}
                         title={c.title}
                         poster={c.poster}

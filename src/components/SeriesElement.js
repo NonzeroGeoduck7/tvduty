@@ -13,7 +13,7 @@ function SeriesElement(props) {
 	  	<div>
 		  	<div>
 				<Link to={"/series/"+props.extId}>
-					<img height={props.height} width={props.height*3/4}
+					<img height={props.width*4/3} width={props.width}
 						src={props.poster}
 						alt={'poster_' + props.title}
 						onClick={() => func(props.title)}

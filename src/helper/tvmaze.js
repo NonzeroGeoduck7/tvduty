@@ -35,6 +35,47 @@ function log(str) {
 	console.log('['+ new Date() + '] ' + str)
 }
 
+function addToMailBody(result, email, description, seriesTitle, update){
+    if (update == '')
+        // do nothing
+        return result
+
+    if (typeof(result[email]) === 'undefined')
+        result[email] = {'changeInfo':{}, "notiInfo":{}}
+    if (typeof(result[email][description][seriesTitle]) === 'undefined'){
+        result['andreasroth@hispeed.ch'][description][seriesTitle]=[]
+    }
+
+    result[email][description][seriesTitle].push(update)
+    return result
+}
+
+function diff(newEp, oldEp){
+    if (typeof oldEp === 'undefined'){
+        return 'new Episode: '+JSON.stringify(newEp)
+    }
+
+    var changes = []
+    if (newEp.title != oldEp.title){
+        changes.push('title: <span style="background-color: #FF0000">'+oldEp.title+'</span><br><span style="background-color: #00FF00">'+newEp.title+'</span>')
+    }
+    if (newEp.seasonNr != oldEp.seasonNr){
+        changes.push('seasonNr: <span style="background-color: #FF0000">'+oldEp.seasonNr+'</span><br><span style="background-color: #00FF00">'+newEp.seasonNr+'</span>')
+    }
+    if (newEp.episodeNr != oldEp.episodeNr){
+        changes.push('episodeNr: <span style="background-color: #FF0000">'+oldEp.episodeNr+'</span><br><span style="background-color: #00FF00">'+newEp.episodeNr+'</span>')
+    }
+    if (newEp.airstamp != oldEp.airstamp){
+        changes.push('airstamp: <span style="background-color: #FF0000">'+oldEp.airstamp+'</span><br><span style="background-color: #00FF00">'+newEp.airstamp+'</span>')
+    }
+
+    if (changes.length > 0){
+        return 's'+newEp.seasonNr+'e'+newEp.episodeNr+':<br>'+changes.join('<br>')
+    } else {
+        return ''
+    }
+}
+
 export async function updateWithTvMaze() {
     // mongoDB
     const seriesList = await Series.find()
@@ -44,7 +85,9 @@ export async function updateWithTvMaze() {
     const response = await getTvMazeData()
     log('API accessed.')
     
+    var result = {}
     if (seriesList.length > 0 && typeof response !== 'undefined') {
+        
         for (const series of seriesList){
             try {
                 // measurement ms/s
@@ -57,6 +100,11 @@ export async function updateWithTvMaze() {
                     log('[' + series.title + '] Update necessary: ' + seriesId)
                     
                     // find exact differences and save in some object
+
+                    var oldEps = await Episodes.aggregate([
+                        { $match: { seriesId: parseInt(seriesId) } },
+                        { $sort : { seasonNr : 1, episodeNr: 1 } },
+                    ])
 
                     await Episodes.deleteMany({seriesId:seriesId})
                     log('[' + series.title + '] All episodes dropped.')
@@ -81,6 +129,15 @@ export async function updateWithTvMaze() {
                     })
                     await Episodes.insertMany(eps)
                     log('[' + series.title + '] New episodes inserted in DB.')
+                    
+                    // CHANGES ON EPISODE LEVEL
+                    var email = 'andreasroth@hispeed.ch'
+                    var description = 'changeInfo' // or NotiInfo
+                    var seriesTitle = series.title
+
+                    newEps.forEach(function(ep, idx){
+                        result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
+                    })
 
                     // series object is changed and written back to db, check for changes in seriesObject here.
                     series.lastUpdated = new Date()
@@ -102,7 +159,6 @@ export async function updateWithTvMaze() {
                     // -> select u.email from userSeries join user u on userId=userId where seriesId=seriesId  
                     // ---> add changes to all emails
 
-
                     // --> if episodes are already fetched, check if episode airs today
 
                 } else {
@@ -114,5 +170,5 @@ export async function updateWithTvMaze() {
         }
     }
     
-    return {}
+    return result
 }

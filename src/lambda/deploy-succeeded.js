@@ -9,6 +9,8 @@ exports.handler = async (event, context) => {
 	try{
 		var res = await updateWithTvMaze()
 
+		console.log(JSON.stringify(res))
+
 		//await sendEmail('andreasroth@hispeed.ch', 'text')
 
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }

@@ -39,7 +39,6 @@ exports.handler = async (event, context, callback) => {
           series = {
             _id: id,
             title: title,
-            nrOfEpisodes: nrOfEpisodes,
 			extId: extId,
 			status: status,
 			poster: posterLink,

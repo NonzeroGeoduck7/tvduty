@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import EpisodeElement from './EpisodeElement'
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
+import Loading from './Loading'
 
 function SeriesInfo ({ match }) {
   
+  let [episodeListLoading, setEpisodeListLoading] = useState(false)
   let [episodesList, setEpisodesList] = useState([])
   let [series, setSeries] = useState([])
   
@@ -24,10 +26,12 @@ function SeriesInfo ({ match }) {
     */
   
     // Fetch the Episodes from the database
+    setEpisodeListLoading(true);
     fetch('/.netlify/functions/episodesRead?seriesId='+seriesId)
   	.then(res => res.json())
   	.then(response => {
-  	  setEpisodesList(response.data)
+      setEpisodesList(response.data)
+      setEpisodeListLoading(false)
   	})
     .catch(err => console.log('Error retrieving episodes: ', err))
 	  
@@ -41,7 +45,7 @@ function SeriesInfo ({ match }) {
         </Link>
       </div>
       seriesId: {seriesId}
-	    {episodesList.map(e =>
+      {episodeListLoading ? <Loading /> : episodesList.map(e =>
         <EpisodeElement
           seriesId={seriesId} // seriesId
           seasonNr={e.seasonNr}

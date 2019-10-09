@@ -9,10 +9,6 @@ const schema = new mongoose.Schema({
     required: [true, 'title field is required'],
     max: 100
   },
-  nrOfEpisodes: {
-    type: Number,
-    required: [true, 'nrOfEpisodes field is required']
-  },
   extId: {
     type: Number,
     required: [true, 'extId field is required']

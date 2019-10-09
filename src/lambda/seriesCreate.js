@@ -33,7 +33,6 @@ exports.handler = async (event, context, callback) => {
     const {name: title, id: extId, image, status, schedule} = res,
           id = mongoose.Types.ObjectId(),
 		  lastUpdated = new Date('1970-12-12'),
-		  nrOfEpisodes = 0,
 		  posterLink = image!=null?image.original.replace("http://","https://"):null,
 //		  schedule = schedule!=null?schedule.days:null,
 		  userId = data.userId,
@@ -52,6 +51,7 @@ exports.handler = async (event, context, callback) => {
 			  userId: userId,
 			  seriesId: extId,
 			  currentEpisode: 0,
+			  receiveNotification: true,
 			  __v: 0
 		  },
           response = {

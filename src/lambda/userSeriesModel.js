@@ -16,13 +16,9 @@ const schema = new mongoose.Schema({
 		  type: Number,
 		  required: [true, 'currentEpisode field is required']
 		},
-		notificationBoolean: {
+		receiveNotification: {
 		  type: Boolean,
-		  required: false,
-		},
-	    notificationId: {
-		  type: String,
-		  required: false,
+		  required: [true, 'receiveNotification field is required']
 		},
       }),
       UserSeries = mongoose.model('userSeries', schema)

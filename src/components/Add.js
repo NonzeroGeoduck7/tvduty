@@ -38,11 +38,19 @@ function Add () {
   
   function postAPI (source, data) {
      return fetch('/.netlify/functions/' + source, {
-         method: 'post',
+         method: 'POST',
          body: JSON.stringify(data)
        })
        .then(res => res.json())
        .catch(err => err)
+  }
+
+  function getAPI (source) {
+    return fetch('/.netlify/functions/' + source, {
+      method: 'GET',
+    })
+    .then(res => res.json())
+    .catch(err => err)
   }
   
   async function addSeries(id) {
@@ -54,13 +62,13 @@ function Add () {
       .then(response => {
         console.log("response from seriesCreate: " + response.msg)
       })
-      .catch(err => console.log('Series.create API error: ', err))
+      .catch(err => console.log('SeriesCreate API error: ', err))
 	  
-	  await postAPI('deploy-succeeded', {})
+	  await getAPI('tvmazeUpdate', {sendEmail: false})
       .then(response => {
-        console.log("response from deploy-succeeded: " + response.msg)
+        console.log("response from tvmazeUpdate: " + response.msg)
       })
-      .catch(err => console.log('Series.create API error: ', err))
+      .catch(err => console.log('tvmazeUpdate API error: ', err))
     
     setProcessing(false)
   }

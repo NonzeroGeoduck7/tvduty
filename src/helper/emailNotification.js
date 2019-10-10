@@ -12,11 +12,11 @@ const send = require('gmail-send')({
 	// files: [ filepath ],                  // Set filenames to attach (if you need to set attachment filename in email, see example below
 })
 
-export async function sendEmail(receiver, text) {
+export async function sendEmail(receiver, html) {
 	try {
 		const {result,full} = await send({
 			to: receiver,
-			text: text,
+			html: '<p>'+html+'</p>',
 		})
 		console.log('sending mail successful: ' + result)
 	} catch(error) {

@@ -1,10 +1,10 @@
 // src/components/NavBar.js
 
-import React from "react";
-import { useAuth0 } from "../react-auth0-wrapper";
+import React from "react"
+import { useAuth0 } from "../react-auth0-wrapper"
 
 const NavBar = () => {
-  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
+  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0()
 
   return (
     <div>
@@ -18,11 +18,11 @@ const NavBar = () => {
         </button>
       )}
 	  
-	  {user && <p>logged in as {user.name} - {user.sub} - subs_id= <p id='subs_id'/></p>}
+	    {user && <p>logged in as {user.name} - {user.sub}</p>}
 
       {isAuthenticated && <button onClick={() => logout()}>Log out</button>}
     </div>
-  );
-};
+  )
+}
 
-export default NavBar;
+export default NavBar

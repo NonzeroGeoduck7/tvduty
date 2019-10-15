@@ -45,11 +45,15 @@ function addToMailBody(result, email, description, seriesTitle, update){
     if (typeof(result[email]) === 'undefined')
         result[email] = {'changeInfo':{}, "notiInfo":{}}
     if (typeof(result[email][description][seriesTitle]) === 'undefined'){
-        result['andreasroth@hispeed.ch'][description][seriesTitle]=[]
+        result[email][description][seriesTitle]=[]
     }
 
     result[email][description][seriesTitle].push(update)
     return result
+}
+
+function change(name, from, to){
+    return ' - '+ name + ': changed from ' + from + ' to ' + to + '.'
 }
 
 function diff(newEp, oldEp){
@@ -59,16 +63,16 @@ function diff(newEp, oldEp){
 
     var changes = []
     if (newEp.title != oldEp.title){
-        changes.push('title: <span style="background-color: #FF0000">'+oldEp.title+'</span><br><span style="background-color: #00FF00">'+newEp.title+'</span>')
+        changes.push(change('title', oldEp.title, newEp.title))
     }
     if (newEp.seasonNr != oldEp.seasonNr){
-        changes.push('seasonNr: <span style="background-color: #FF0000">'+oldEp.seasonNr+'</span><br><span style="background-color: #00FF00">'+newEp.seasonNr+'</span>')
+        changes.push(change('seasonNr', oldEp.seasonNr, newEp.seasonNr))
     }
     if (newEp.episodeNr != oldEp.episodeNr){
-        changes.push('episodeNr: <span style="background-color: #FF0000">'+oldEp.episodeNr+'</span><br><span style="background-color: #00FF00">'+newEp.episodeNr+'</span>')
+        changes.push(change('episodeNr', oldEp.episodeNr, newEp.episodeNr))
     }
     if (newEp.airstamp != oldEp.airstamp){
-        changes.push('airstamp: <span style="background-color: #FF0000">'+oldEp.airstamp+'</span><br><span style="background-color: #00FF00">'+newEp.airstamp+'</span>')
+        changes.push(change('airstamp', oldEp.airstamp, newEp.airstamp))
     }
 
     if (changes.length > 0){
@@ -95,21 +99,22 @@ exports.handler = async (event, context) => {
             
             for (const series of seriesList){
                 try {
+                    // needed for check if episodes air today
+                    let seriesId = series.extId
+                    var oldEps = await Episodes.aggregate([
+                        { $match: { seriesId: parseInt(seriesId) } },
+                        { $sort : { seasonNr : 1, episodeNr: 1 } },
+                    ])
+
                     // measurement ms/s
                     const seriesResponseDate = response[series.extId]*1000
     
                     if(Date.parse(series.lastUpdated) < seriesResponseDate){
 
                         // episodes need to be updated
-                        let seriesId = series.extId
                         log('[' + series.title + '] Update necessary: ' + seriesId)
 
                         // find exact differences and save in some object
-
-                        var oldEps = await Episodes.aggregate([
-                            { $match: { seriesId: parseInt(seriesId) } },
-                            { $sort : { seasonNr : 1, episodeNr: 1 } },
-                        ])
     
                         await Episodes.deleteMany({seriesId:seriesId})
                         log('[' + series.title + '] All episodes dropped.')
@@ -133,11 +138,13 @@ exports.handler = async (event, context) => {
                             })
                         })
                         await Episodes.insertMany(eps)
-                        log('[' + series.title + '] New episodes inserted in DB.')
+
+                        // save new eps to find out if episodes air today
+                        oldEps = eps
                         
                         // CHANGES ON EPISODE LEVEL
                         var email = 'andreasroth@hispeed.ch'
-                        var description = 'changeInfo' // or NotiInfo
+                        var description = 'changeInfo' // or notiInfo
                         var seriesTitle = series.title
 
                         eps.forEach(function(ep, idx){
@@ -170,6 +177,21 @@ exports.handler = async (event, context) => {
                     } else {
                         log('[' + series.title + '] No update necessary.')
                     }
+
+                    oldEps.forEach(function(ep){
+                        var today = new Date()
+                        today.setHours(22,0,0,0)
+                        
+                        var yesterday = new Date()
+                        yesterday.setDate(yesterday.getDate() - 1)
+
+                        if (new Date(ep.airstamp) > yesterday && new Date(ep.airstamp) < today){
+                            var email = 'andreasroth@hispeed.ch'
+                            var description = 'notiInfo'
+                            var update = '"' + ep.title + '" airdate: '+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+'.<br>'
+                            result = addToMailBody(result, email, description, series.title, update)
+                        }
+                    })
                 } catch(err){
                     log('error while updating series with id: ' + series.extId + ' - ' + err)
                 }
@@ -180,7 +202,7 @@ exports.handler = async (event, context) => {
         console.log(result)
 
         const sendEmailBoolean = event.queryStringParameters.sendEmail
-        console.log("sendEmail: "+sendEmail)
+        console.log("sendEmail: "+sendEmailBoolean)
         if (sendEmailBoolean){
             for (const email in result) {
                 await sendEmail(email, JSON.stringify(result[email]))

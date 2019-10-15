@@ -3,14 +3,30 @@ import React from 'react'
 import { Link } from "react-router-dom"
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import placeholder from '../img/placeholder.png';
+import posed from 'react-pose';
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
 function SeriesElement(props) {
 	
+	const Hoverable = posed.div({
+		hoverable: true,
+		init: {
+		  scale: 1,
+		  boxShadow: '0px 0px 0px rgba(0,0,0,0)'
+		},
+		hover: {
+		  scale: 1.1,
+		  boxShadow: '0px 5px 10px rgba(0,0,0,0)'
+		},
+	})
+
+	// this is the progress for all episodes not the ones that aired...
+	var watchPercentage = 100*(props.currentEpisode+1)/props.nrOfEpisodes
+	var watchProgress = (props.currentEpisode+1) + '/' + props.nrOfEpisodes + ' (' +watchPercentage + '%)'
   	return (
-	  	<div>
-		  	<div>
+		<div>
+			<Hoverable>
 				<Link to={"/series/"+props.extId}>
 					<LazyLoadImage
 						scrollPosition={props.scrollPosition}
@@ -20,20 +36,19 @@ function SeriesElement(props) {
 						src={props.poster}
 					/>
 	  			</Link>
-			</div>
+			</Hoverable>
 			<div>
 				<label>
-					{props.title} -> ep: {props.currentEpisode}/? ({props.currentEpisode/1}%)
+					{props.title} -> ep: {watchProgress}
 				</label>
 			</div>
-		
-	  	</div>
+		</div>
   	)
 }
 
 SeriesElement.propTypes = {
   title: PropTypes.string.isRequired,
-  height: PropTypes.number.isRequired,
+  width: PropTypes.number.isRequired,
 }
 
 export default SeriesElement

@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
 	  	    foreignField: 'seriesId',
 	  	    as: 'userseries'
 	      }
-	    }
+      }
 	  ]);
 	  
     const response = {

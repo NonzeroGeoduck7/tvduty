@@ -24,12 +24,12 @@ function App(props) {
         <header>
           <NavBar />
         </header>
-	  	{isAuthenticated && <Switch>
-          <Route path="/" exact component={SeriesTable} />
-	  	  <Route path="/series/:extId" component={SeriesInfo} />
-	  	  <Route path="/add" component={Add} />
-        </Switch>}
-	    {!isAuthenticated && <div>Please log in to see this page</div>}
+        {isAuthenticated && <Switch>
+            <Route path="/" exact component={SeriesTable} />
+            <Route path="/series/:extId" component={SeriesInfo} />
+            <Route path="/add" component={Add} />
+          </Switch>}
+        {!isAuthenticated && <div>Please log in to see this page</div>}
       </BrowserRouter>
     </div>
   );

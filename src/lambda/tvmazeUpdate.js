@@ -147,6 +147,7 @@ exports.handler = async (event, context) => {
                         // series object is changed and written back to db, check for changes in seriesObject here.
                         series.lastUpdated = new Date()
                         series.status = info.status
+                        series.nrOfEpisodes = eps.length
                         series.poster = info.image!=null?info.image.original:null
                         
                         // TODO:

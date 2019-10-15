@@ -50,7 +50,9 @@ function SeriesTable(scrollPosition) {
     }, [user.sub])
     
     const { width, height } = windowDimensions
-    const columnWidth = 330
+
+    // at least 2 items next to each other, and at max 10 items next to each other, minus some pixels for the vertical scrollbar, if any.
+    const columnWidth = Math.min((width-40)/2, Math.max(330, (width-40)/10))
 
     return (
         <div>
@@ -68,6 +70,7 @@ function SeriesTable(scrollPosition) {
                             key={c.extId}
                             width={columnWidth/1.25}
                             currentEpisode={c.userseries[0].currentEpisode}
+                            nrOfEpisodes={c.nrOfEpisodes}
                             title={c.title}
                             poster={c.poster}
                             extId={c.extId} />

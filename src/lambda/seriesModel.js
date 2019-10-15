@@ -17,7 +17,11 @@ const schema = new mongoose.Schema({
     type: String,
     required: false,
   },
-    status: {
+  nrOfEpisodes: {
+    type: Number,
+    required: false,
+  },
+  status: {
     type: String,
     required: [true, 'status field is required'],
   },

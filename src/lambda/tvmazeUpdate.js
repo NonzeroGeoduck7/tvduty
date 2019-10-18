@@ -188,7 +188,7 @@ exports.handler = async (event, context) => {
                         if (new Date(ep.airstamp) > yesterday && new Date(ep.airstamp) < today){
                             var email = 'andreasroth@hispeed.ch'
                             var description = 'notiInfo'
-                            var update = '"' + ep.title + '" airdate: '+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+'.<br>'
+                            var update = ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
                             result = addToMailBody(result, email, description, series.title, update)
                         }
                     })
@@ -204,8 +204,11 @@ exports.handler = async (event, context) => {
         const sendEmailBoolean = event.queryStringParameters.sendEmail
         console.log("sendEmail: "+sendEmailBoolean)
         if (sendEmailBoolean){
+
+
+            
             for (const email in result) {
-                await sendEmail(email, JSON.stringify(result[email]))
+                await sendEmail(email, result[email])
             }
         }
 

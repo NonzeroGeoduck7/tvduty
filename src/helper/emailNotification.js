@@ -12,11 +12,46 @@ const send = require('gmail-send')({
 	// files: [ filepath ],                  // Set filenames to attach (if you need to set attachment filename in email, see example below
 })
 
-export async function sendEmail(receiver, html) {
+function isEmpty(obj) { 
+	for (var x in obj) { return false; }
+	return true;
+ }
+
+export async function sendEmail(receiver, src) {
 	try {
+		let html = '<html>'
+		const notiIntro = 'The following episodes aired last night:<br><br>'
+		const changeIntro = '<br><br>Changes:<br><br>'
+
+		const {notiInfo, changeInfo} = src
+
+		if (!isEmpty(notiInfo)){
+			html += notiIntro
+			for (const seriesTitle in notiInfo) {
+				html += '<b>'+seriesTitle+'</b>:<br>'
+				notiInfo[seriesTitle].forEach(e => {
+					html += ' - ' + e + '<br>'
+				})
+				html += '<br>'
+			}
+		}
+		if (!isEmpty(changeInfo)){
+			html += changeIntro
+			for (const seriesTitle in changeInfo) {
+				html += '<b>'+seriesTitle+'</b>:'
+				for (const info in changeInfo[seriesTitle]){
+					html += ' - ' + info + '<br>'
+				}
+			}
+		}
+
+		html += '</html>'
+
+		console.log(html)
+
 		const {result,full} = await send({
 			to: receiver,
-			html: '<p>'+html+'</p>',
+			html: html,
 		})
 		console.log('sending mail successful: ' + result)
 	} catch(error) {

@@ -41,14 +41,17 @@ function addToMailBody(result, email, description, seriesTitle, update){
     if (update == '')
         // do nothing
         return result
+    
+    email.forEach(function(email){
+        if (typeof(result[email]) === 'undefined')
+            result[email] = {'changeInfo':{}, "notiInfo":{}}
+        if (typeof(result[email][description][seriesTitle]) === 'undefined'){
+            result[email][description][seriesTitle]=[]
+        }
 
-    if (typeof(result[email]) === 'undefined')
-        result[email] = {'changeInfo':{}, "notiInfo":{}}
-    if (typeof(result[email][description][seriesTitle]) === 'undefined'){
-        result[email][description][seriesTitle]=[]
-    }
+        result[email][description][seriesTitle].push(update)
+    })
 
-    result[email][description][seriesTitle].push(update)
     return result
 }
 
@@ -87,7 +90,25 @@ exports.handler = async (event, context) => {
 	
 	try{
 		// mongoDB
-        const seriesList = await Series.find()
+        const seriesList = await Series.aggregate([
+            {
+                $lookup: {
+                    from: 'userseries',
+                    localField: 'extId',
+                    foreignField: 'seriesId',
+                    as: 'userseries'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'user',
+                    localField: 'userseries.userId',
+                    foreignField: 'userId',
+                    as: 'user'
+                }
+            },
+        ])
+
         log('Found series: ' + seriesList.length)
         
         //tvmaze
@@ -138,13 +159,13 @@ exports.handler = async (event, context) => {
                             })
                         })
                         await Episodes.insertMany(eps)
-
-                        // save new eps to find out if episodes air today
-                        oldEps = eps
                         
                         // CHANGES ON EPISODE LEVEL
-                        var email = 'andreasroth@hispeed.ch'
-                        var description = 'changeInfo' // or notiInfo
+                        var email = []
+                        series.user.forEach(function(user) {
+                            email.push(user.email)
+                        })
+                        var description = 'changeInfo'
                         var seriesTitle = series.title
 
                         eps.forEach(function(ep, idx){
@@ -168,12 +189,9 @@ exports.handler = async (event, context) => {
                             return { statusCode: 500, body: "series updateDate has not been updated" }
                         }
     
-                        // find out which users subscribed to this series
-                        // -> select u.email from userSeries join user u on userId=userId where seriesId=seriesId  
-                        // ---> add changes to all emails
-    
-                        // --> if episodes are already fetched, check if episode airs today
-    
+                        // save new eps to find out if episodes air today
+                        oldEps = eps
+
                     } else {
                         log('[' + series.title + '] No update necessary.')
                     }
@@ -186,9 +204,14 @@ exports.handler = async (event, context) => {
                         yesterday.setDate(yesterday.getDate() - 1)
 
                         if (new Date(ep.airstamp) > yesterday && new Date(ep.airstamp) < today){
-                            var email = 'andreasroth@hispeed.ch'
+                            var email = []
+                            series.user.forEach(function(user) {
+                                // look in series.userseries if receiveNotification == true
+                                email.push(user.email)
+                            })
                             var description = 'notiInfo'
                             var update = ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
+                            
                             result = addToMailBody(result, email, description, series.title, update)
                         }
                     })
@@ -204,10 +227,7 @@ exports.handler = async (event, context) => {
         const sendEmailBoolean = event.queryStringParameters.sendEmail
         console.log("sendEmail: "+sendEmailBoolean)
         if (sendEmailBoolean){
-
-
-            
-            for (const email in result) {
+            for (email in result){
                 await sendEmail(email, result[email])
             }
         }

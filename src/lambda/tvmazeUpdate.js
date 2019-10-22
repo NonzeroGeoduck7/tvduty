@@ -61,7 +61,7 @@ function change(name, from, to){
 
 function diff(newEp, oldEp){
     if (typeof oldEp === 'undefined'){
-        return 'new Episode: '+JSON.stringify(newEp)
+        return 'new Episode: s'+newEp.seasonNr+'e'+newEp.episodeNr+': <b>'+newEp.title+'</b> '+(newEp.airstamp==null?'airdate unknown':'will air '+newEp.airstamp)+'.'
     }
 
     var changes = []
@@ -210,7 +210,7 @@ exports.handler = async (event, context) => {
                                 email.push(user.email)
                             })
                             var description = 'notiInfo'
-                            var update = ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
+                            var update = 's'+newEp.seasonNr+'e'+newEp.episodeNr+':'+ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
                             
                             result = addToMailBody(result, email, description, series.title, update)
                         }

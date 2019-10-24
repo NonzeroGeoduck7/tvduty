@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@auth0/auth0-spa-js": "^1.2.3",
+    "@sentry/browser": "^5.7.1",
     "encoding": "^0.1.12",
     "gmail-send": "^1.8.10",
     "isomorphic-fetch": "^2.2.1",

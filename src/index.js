@@ -1,11 +1,13 @@
 // src/index.js
 
-import React from "react";
-import ReactDOM from "react-dom";
-import App from "./App";
-import * as serviceWorker from "./serviceWorker";
-import { Auth0Provider } from "./react-auth0-wrapper";
-import config from "./auth_config.json";
+import React from "react"
+import ReactDOM from "react-dom"
+import App from "./App"
+import * as serviceWorker from "./serviceWorker"
+import { Auth0Provider } from "./react-auth0-wrapper"
+import config from "./auth_config.json"
+import ErrorBoundary from "./ErrorBoundary"
+import * as Sentry from '@sentry/browser';
 
 // A function that routes the user to the right place
 // after login
@@ -19,15 +21,21 @@ const onRedirectCallback = appState => {
   );
 };
 
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({dsn: "https://7138f7d690cd4cac92243def8fa03a08@sentry.io/1792135"})
+}
+
 ReactDOM.render(
-  <Auth0Provider
-    domain={config.domain}
-    client_id={config.clientId}
-    redirect_uri={window.location.origin}
-    onRedirectCallback={onRedirectCallback}
->
-    <App />
-  </Auth0Provider>,
+  <ErrorBoundary>
+    <Auth0Provider
+      domain={config.domain}
+      client_id={config.clientId}
+      redirect_uri={window.location.origin}
+      onRedirectCallback={onRedirectCallback}
+    >
+      <App />
+    </Auth0Provider>
+  </ErrorBoundary>,
   document.getElementById("root")
 );
 

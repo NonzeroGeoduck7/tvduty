@@ -1,6 +1,7 @@
 import fetch from 'node-fetch'
 import mongoose from 'mongoose'
 import db from '../lambda/server'
+import * as Sentry from '@sentry/browser'
 import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 
@@ -216,6 +217,7 @@ exports.handler = async (event, context) => {
                         }
                     })
                 } catch(err){
+                    Sentry.captureException(err)
                     log('error while updating series with id: ' + series.extId + ' - ' + err)
                 }
             }
@@ -234,6 +236,7 @@ exports.handler = async (event, context) => {
 
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err) {
+        Sentry.captureException(err)
 		console.log('deploy-succeeded function end: ' + err)
 		return { statusCode: 500, body: String(err) }
 	}

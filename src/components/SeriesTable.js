@@ -7,7 +7,6 @@ import StackGrid from "react-stack-grid"
 import { trackWindowScroll } from 'react-lazy-load-image-component';
 
 import { useAuth0 } from "../react-auth0-wrapper"
-import * as Sentry from '@sentry/browser';
 
 function getWindowDimensions() {
     const { innerWidth: width, innerHeight: height } = window

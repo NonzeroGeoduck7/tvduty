@@ -211,7 +211,7 @@ exports.handler = async (event, context) => {
                                 email.push(user.email)
                             })
                             var description = 'notiInfo'
-                            var update = 's'+newEp.seasonNr+'e'+newEp.episodeNr+':'+ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
+                            var update = 's'+ep.seasonNr+'e'+ep.episodeNr+':'+ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
                             
                             result = addToMailBody(result, email, description, series.title, update)
                         }

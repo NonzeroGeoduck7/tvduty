@@ -3,53 +3,91 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from "react-router-dom"
 import Loading from './Loading'
-import DataTable from 'react-data-table-component';
-import moment from 'moment';
-import { useAuth0 } from "../react-auth0-wrapper";
+import DataTable from 'react-data-table-component'
+import moment from 'moment'
+import { useAuth0 } from "../react-auth0-wrapper"
+import { seasonEpisodeNotation } from "../helper/helperFunctions"
+import { LazyLoadImage } from 'react-lazy-load-image-component'
+import EpisodePlaceholder from '../img/placeholder.png';
+import { getWindowDimensions } from "../helper/helperFunctions"
 
 function SeriesInfo ({ match }) {
   const { user } = useAuth0();
+  let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowDimensions(getWindowDimensions())
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const columns = [
     {
       name: 'Status',
       selector: 'index',
       sortable: true,
-      cell: (data) => <p>{data.watched ? "watched":"not watched"}</p>,
+      cell: (data) => <div>{data.watched ? "watched":"not watched"}</div>,
+      width: '15%',
+      resizable: true,
     },
     {
-      name: 'Season',
-      selector: 'seasonNr',
+      name: 'Number',
+      selector: 'seasonEpisodeNotation',
       sortable: true,
-      maxWidth: '20px',
-    },
-    {
-      name: 'Episode',
-      selector: 'episodeNr',
-      sortable: true,
-      maxWidth: '20px',
+      width: '10%',
     },
     {
       name: 'Title',
       selector: 'title',
       sortable: true,
+      width: '40%',
     },
     {
       name: 'Airdate',
       selector: 'airstamp',
       sortable: true,
       format: d => moment(d.airstamp).format('llll'),
+      width: '20%',
+      resizable: true,
     },
     {
       name: 'watched',
       cell: (data) => <button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr)}>&#10004;</button>,
-      maxWidth: '30px',
+      width: '10%',
+      resizable: true,
     },
   ]
+
+  var conditionalRowStyles = [
+    {
+      'when': row => new Date(row.airstamp) > Date.now(),
+      style: {
+        backgroundColor: 'rgba(254, 36, 43, 0.2)', // light red
+      },
+    },
+    {
+      'when': row => row.watched,
+      style: {
+        backgroundColor: 'rgba(68, 249, 68, 0.2)', // light green
+      },
+    },
+  ];
   
+  const { width } = windowDimensions
+  let imageWidth = Math.min(1280,width - 20)
   const ExpandedComponent = ({ data }) => (
     <div>
-      <img src={data.image} height={400} alt={'img_'+data.index} />
+      {/* TODO: scrollPosition is added to props. performance? */}
+      <LazyLoadImage
+        width={imageWidth}
+        height={imageWidth*9/16}
+        placeholderSrc={EpisodePlaceholder}
+        effect="blur"
+        src={data.image}
+      />
       <div dangerouslySetInnerHTML={{ __html: data.summary }} />
     </div>
   )
@@ -99,9 +137,12 @@ function SeriesInfo ({ match }) {
     fetch('/.netlify/functions/episodesRead?seriesId='+seriesId)
   	.then(res => res.json())
   	.then(response => {
+      let size = response.data.length
       setEpisodesList(response.data.map(function(entry, idx){
+        entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
         entry.index=idx
-        entry.watched=idx < 5 // TODO: read currentEpisode value from userSeriesRead
+        entry.watched=idx > size - 0 // TODO: read currentEpisode value from userSeriesRead
+        // careful, inverted list, look at ordering in episodesRead
         return entry
       }))
       setEpisodeListLoading(false)
@@ -117,7 +158,8 @@ function SeriesInfo ({ match }) {
           <button>Go back</button>
         </Link>
       </div>
-      seriesId: {seriesId}
+        seriesId: {seriesId}<br/>
+        red = Episode not out yet
       <div>
         {"Series: "+JSON.stringify(series)}
       </div>
@@ -126,10 +168,11 @@ function SeriesInfo ({ match }) {
           title="Episode List"
           columns={columns}
           data={episodesList}
+          conditionalRowStyles={conditionalRowStyles}
           expandableRows
           highlightOnHover
-          expandableRowsComponent={<ExpandedComponent />}
           expandOnRowClicked
+          expandableRowsComponent={<ExpandedComponent />}
         />
       }
     </div>

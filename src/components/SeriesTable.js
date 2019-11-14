@@ -7,14 +7,7 @@ import StackGrid from "react-stack-grid"
 import { trackWindowScroll } from 'react-lazy-load-image-component';
 
 import { useAuth0 } from "../react-auth0-wrapper"
-
-function getWindowDimensions() {
-    const { innerWidth: width, innerHeight: height } = window
-    return {
-        width,
-        height
-    }
-}
+import { getWindowDimensions } from "../helper/helperFunctions"
 
 function SeriesTable(scrollPosition) {
     

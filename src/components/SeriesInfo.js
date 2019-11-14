@@ -63,7 +63,7 @@ function SeriesInfo ({ match }) {
 
   var conditionalRowStyles = [
     {
-      'when': row => new Date(row.airstamp) > Date.now(),
+      'when': row => row.airstamp == null || new Date(row.airstamp) > Date.now(),
       style: {
         backgroundColor: 'rgba(254, 36, 43, 0.2)', // light red
       },

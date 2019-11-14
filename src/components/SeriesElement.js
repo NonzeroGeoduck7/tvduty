@@ -22,7 +22,7 @@ function SeriesElement(props) {
 	})
 
 	// this is the progress for all episodes not the ones that aired...
-	var watchPercentage = 100*(props.currentEpisode+1)/props.nrOfEpisodes
+	var watchPercentage = parseFloat(100*(props.currentEpisode)/props.nrOfEpisodes).toFixed(0)
 	var watchProgress = (props.currentEpisode+1) + '/' + props.nrOfEpisodes + ' (' +watchPercentage + '%)'
   	return (
 		<div>

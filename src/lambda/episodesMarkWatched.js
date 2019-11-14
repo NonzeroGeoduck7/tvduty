@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import db from './server'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
+import { seasonEpisodeNotation } from '../helper/helperFunctions'
 
 exports.handler = async (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
@@ -15,6 +16,8 @@ exports.handler = async (event, context, callback) => {
           seriesId = parseInt(data.seriesId),
           userId = data.userId;
     
+    console.log("mark "+seriesId+" "+seasonEpisodeNotation(seasonNr, episodeNr)+" as watched.")
+
     // find out what index the episode in overall episode list has. start counting with 0.
   	var query = await Episodes.aggregate([{
         $match: {

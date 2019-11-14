@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Link } from "react-router-dom"
 import { useAuth0 } from "../react-auth0-wrapper"
 import LoadingOverlay from 'react-loading-overlay'
+import placeholder from '../img/placeholder.png'
 
 function Add () {
 	  
@@ -73,16 +74,39 @@ function Add () {
     setProcessing(false)
   }
   
+  function keyPressed(event) {
+    if (event.key === "Enter") {
+      startSearch()
+    }
+  }
+
   return (
   <LoadingOverlay
     active={processing}
     spinner
     text='Processing request...'>
       <div>
-      <input name='search' type='string' value={input} onChange={handleSearchInputChange} />
+      <input
+        name='search'
+        type='string' value={input}
+        onChange={handleSearchInputChange}
+        onKeyPress={keyPressed}
+      />
       <button onClick={startSearch}>search</button>
       </div>
-      {results.map(c => <div><button onClick={()=>addSeries(c.show.id)}>&#43;</button><label>{c.show.name} - {c.show.status}</label></div>
+      {results.map(c =>
+        <div>
+          <img
+            width={200}
+            src={c.show.image!=null?c.show.image.medium:placeholder}
+          />
+          <label>
+            {c.show.name} - Status: {c.show.status}, premiered: {c.show.premiered} 
+          </label>
+          <button
+            onClick={()=>addSeries(c.show.id)}>add to my list
+          </button>
+        </div>
       ) }
       <div>
         <Link to="/">

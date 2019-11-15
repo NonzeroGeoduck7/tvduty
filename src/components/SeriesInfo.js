@@ -8,12 +8,14 @@ import moment from 'moment'
 import { useAuth0 } from "../react-auth0-wrapper"
 import { seasonEpisodeNotation } from "../helper/helperFunctions"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
-import EpisodePlaceholder from '../img/placeholder.png';
+import EpisodePlaceholder from '../img/placeholder.png'
 import { getWindowDimensions } from "../helper/helperFunctions"
+import * as Sentry from '@sentry/browser'
 
 function SeriesInfo ({ match }) {
   const { user } = useAuth0();
   let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
+  let [lastWatchedEpisode, setLastWatchedEpisode] = useState()
 
   useEffect(() => {
     function handleResize() {
@@ -49,7 +51,7 @@ function SeriesInfo ({ match }) {
     },
     {
       name: 'watched',
-      cell: (data) => <button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr)}>&#10004;</button>,
+      cell: (data) => <button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr, data.index)}>&#10004;</button>,
       width: '10%',
       resizable: true,
     },
@@ -95,55 +97,69 @@ function SeriesInfo ({ match }) {
       .catch(err => err)
   }
   
-  async function markWatched(seriesId, seasonNr, episodeNr) {
+  async function markWatched(seriesId, seasonNr, episodeNr, index) {
     console.log("mark episode " + seasonNr + "x" + episodeNr + " as watched for user " + user.sub)
     
     await postAPI('episodesMarkWatched', {seriesId: seriesId, seasonNr: seasonNr, episodeNr: episodeNr, userId: user.sub})
-      .then(response => {
-        console.log("response from episodeWatched: " + response.msg)
-      })
       .catch(err => console.log('episodeWatched API error: ', err))
+
+    setLastWatchedEpisode(index)
   }
 
   
   let [episodeListLoading, setEpisodeListLoading] = useState(false)
   let [episodesList, setEpisodesList] = useState([])
-  let [series, setSeries] = useState([])
   
   const { params: { extId:seriesId } } = match
   
   useEffect(() => {
+    fetch('/.netlify/functions/userSeriesRead?seriesId='+seriesId+'&userId='+user.sub)
+      .then(res => res.json())
+      .then(response => {
+        if (response.data.length !== 1){
+          Sentry.captureException("userSeries found <> 1 result for seriesId "+seriesId+" and user "+user.sub+": "+response.data)
+        } else {
+          setLastWatchedEpisode(response.data[0].lastWatchedEpisode)
+        }
+      })
+      .catch(err => console.log('Error retrieving userSeries: ', err))
+
+  }, [seriesId, user.sub])
+
+  useEffect(() => {
+    if (lastWatchedEpisode==null){
+      console.log("lastWatchedEpisode not yet available, skipping")
+      return
+    }
+
     console.log("useEffect method completed, showsInfo updated.")
-
-    /*
-    fetch('/.netlify/functions/userSeriesRead?seriesId='+seriesId+'?userId='+user.sub)
-  	.then(res => res.json())
-  	.then(response => {
-  	  setSeries(response.data)
-  	})
-    .catch(err => console.log('Error retrieving series: ', err))
-    */
-
-   // TODO: check here if user has tracked this series.
   
     // Fetch the Episodes from the database
     setEpisodeListLoading(true);
-    fetch('/.netlify/functions/episodesRead?seriesId='+seriesId)
-  	.then(res => res.json())
-  	.then(response => {
-      let size = response.data.length
-      setEpisodesList(response.data.map(function(entry, idx){
-        entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
-        entry.index=idx
-        entry.watched=idx > size - 0 // TODO: read currentEpisode value from userSeriesRead
-        // careful, inverted list, look at ordering in episodesRead
+
+    if (episodesList.length === 0){
+      fetch('/.netlify/functions/episodesRead?seriesId='+seriesId)
+      .then(res => res.json())
+      .then(response => {
+        setEpisodesList(response.data.map(function(entry, idx){
+          entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
+          entry.index=idx
+          entry.watched=idx <= lastWatchedEpisode
+          return entry
+        }))
+        setEpisodeListLoading(false)
+      })
+      .catch(err => console.log('Error retrieving episodes: ', err))
+    } else {
+      // episodesList is already loaded, just update lastWatchedEpisode
+      setEpisodesList(episodesList.map(function(entry, idx){
+        entry.watched=idx <= lastWatchedEpisode
         return entry
       }))
       setEpisodeListLoading(false)
-  	})
-    .catch(err => console.log('Error retrieving episodes: ', err))
+    }
 	  
-  }, [seriesId]);
+  }, [seriesId, lastWatchedEpisode]);
 
   return (
     <div>
@@ -153,10 +169,10 @@ function SeriesInfo ({ match }) {
         </Link>
       </div>
         seriesId: {seriesId}<br/>
-        red = Episode not out yet
-      <div>
-        {"Series: "+JSON.stringify(series)}
-      </div>
+      <br/>
+      <div style={{color: 'green'}}>green = Episode already watched</div>
+      <div style={{color: 'red'}}>red = Episode not out yet</div>
+      <br/>
       {episodeListLoading ? <Loading /> :
         <DataTable
           title="Episode List"
@@ -164,8 +180,10 @@ function SeriesInfo ({ match }) {
           data={episodesList}
           style={{width: document.innerWidth}}
           conditionalRowStyles={conditionalRowStyles}
-          expandableRows
+          defaultSortField={"seasonEpisodeNotation"}
+          defaultSortAsc={false}
           highlightOnHover
+          expandableRows
           expandOnRowClicked
           expandableRowsComponent={<ExpandedComponent />}
         />

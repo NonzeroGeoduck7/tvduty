@@ -6,15 +6,16 @@ const schema = new mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   userId: {
     type: String,
-    required: [true, 'user field is required']
+    required: [true, 'userId field is required']
   },
   seriesId: {
     type: Number,
     required: [true, 'seriesId field is required']
   },
-  currentEpisode: {
+  lastWatchedEpisode: {
     type: Number,
-    required: [true, 'currentEpisode field is required']
+    required: [true, 'lastWatchedEpisode field is required'],
+    default: -1,
   },
   receiveNotification: {
     type: Boolean,

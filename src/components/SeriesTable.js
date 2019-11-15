@@ -62,7 +62,7 @@ function SeriesTable(scrollPosition) {
                             scrollPosition={scrollPosition}
                             key={c.extId}
                             width={columnWidth/1.25}
-                            currentEpisode={c.userseries[0].currentEpisode}
+                            lastWatchedEpisode={c.userseries[0].lastWatchedEpisode}
                             nrOfEpisodes={c.nrOfEpisodes}
                             title={c.title}
                             poster={c.poster}

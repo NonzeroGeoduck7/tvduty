@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { useAuth0 } from "../react-auth0-wrapper"
 import LoadingOverlay from 'react-loading-overlay'
 import placeholder from '../img/placeholder.png'
+import { assureHttpsUrl } from '../helper/helperFunctions'
 
 function Add () {
 	  
@@ -98,7 +99,7 @@ function Add () {
         <div>
           <img
             width={200}
-            src={c.show.image!=null?c.show.image.medium:placeholder}
+            src={c.show.image!=null?assureHttpsUrl(c.show.image.medium):placeholder}
           />
           <label>
             {c.show.name} - Status: {c.show.status}, premiered: {c.show.premiered} 

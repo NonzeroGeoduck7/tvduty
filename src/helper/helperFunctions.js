@@ -9,6 +9,15 @@ export const seasonEpisodeNotation = (seasonNr, episodeNr) => {
     return 's'+season+'e'+episode
 }
 
+export const assureHttpsUrl = (url) => {
+    if (url.startsWith("http")){
+        return url.replace("http","https")
+    } else {
+        console.log("unknown url format: "+url)
+        return null
+    }
+}
+
 export const getWindowDimensions = () => {
     const { innerWidth: width, innerHeight: height } = window
     return {

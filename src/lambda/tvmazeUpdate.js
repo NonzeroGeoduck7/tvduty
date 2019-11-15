@@ -6,6 +6,7 @@ import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 
 import { sendEmail } from '../helper/emailNotification.js'
+import { assureHttpsUrl } from '../helper/helperFunctions'
 
 const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
@@ -153,7 +154,7 @@ exports.handler = async (event, context) => {
                                 "seasonNr":ep.season,
                                 "episodeNr":ep.number,
                                 "seriesId":seriesId,
-                                "image":ep.image!=null?ep.image.original.replace("http://","https://"):null,
+                                "image":ep.image!=null?assureHttpsUrl(ep.image.original):null,
                                 "airstamp":ep.airstamp,
                                 "runtime":ep.runtime,
                                 "summary":ep.summary
@@ -177,7 +178,7 @@ exports.handler = async (event, context) => {
                         series.lastUpdated = new Date()
                         series.status = info.status
                         series.nrOfEpisodes = eps.length
-                        series.poster = info.image!=null?info.image.original:null
+                        series.poster = info.image!=null?assureHttpsUrl(info.image.original):null
                         
                         // TODO:
                         // - measure difference in episode.length and series.nrOfEpisodes

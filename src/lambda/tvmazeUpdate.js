@@ -36,7 +36,7 @@ async function getInformationForSeries(seriesId) {
 }
 
 function log(str) {
-	console.log('['+ new Date() + '] ' + str)
+	console.log(str)
 }
 
 function addToMailBody(result, email, description, seriesTitle, update){
@@ -89,7 +89,9 @@ function diff(newEp, oldEp){
 
 exports.handler = async (event, context) => {
 	context.callbackWaitsForEmptyEventLoop = false
-	
+    
+    log("init function: "+new Date())
+
 	try{
 		// mongoDB
         const seriesList = await Series.aggregate([
@@ -120,6 +122,10 @@ exports.handler = async (event, context) => {
         var result = {}
         if (seriesList.length > 0 && typeof response !== 'undefined') {
             
+            var seriesToInsert = []
+            var seriesToDelete = []
+            var epsToInsert = []
+            var epsToDelete = []
             for (const series of seriesList){
                 try {
                     // needed for check if episodes air today
@@ -133,18 +139,14 @@ exports.handler = async (event, context) => {
                     const seriesResponseDate = response[series.extId]*1000
     
                     if(Date.parse(series.lastUpdated) < seriesResponseDate){
-
                         // episodes need to be updated
-                        log('[' + series.title + '] Update necessary: ' + seriesId)
 
                         // find exact differences and save in some object
     
-                        await Episodes.deleteMany({seriesId:seriesId})
-                        log('[' + series.title + '] All episodes dropped.')
+                        epsToDelete.push(seriesId)
     
                         let info = await getInformationForSeries(seriesId)
                         let newEps = info._embedded.episodes
-                        log('[' + series.title + '] New episodes fetched.')
 
                         var eps = []
                         newEps.forEach(function(ep){
@@ -160,7 +162,6 @@ exports.handler = async (event, context) => {
                                 "summary":ep.summary
                             })
                         })
-                        await Episodes.insertMany(eps)
                         
                         // CHANGES ON EPISODE LEVEL
                         var email = []
@@ -175,27 +176,30 @@ exports.handler = async (event, context) => {
                         })
     
                         // series object is changed and written back to db, check for changes in seriesObject here.
-                        series.lastUpdated = new Date()
-                        series.status = info.status
-                        series.nrOfEpisodes = eps.length
-                        series.poster = info.image!=null?assureHttpsUrl(info.image.original):null
-                        
+                        let obj = {
+                            "title": series.title,
+                            "extId": series.extId,
+                            "lastUpdated": new Date(),
+                            "status": info.status,
+                            "nrOfEpisodes": eps.length,
+                            "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
+                        }
+
                         // TODO:
                         // - measure difference in episode.length and series.nrOfEpisodes
                         // - send notification here
                         // - also check airdate
                         
-                        let res = await Series.updateOne({"extId":series.extId}, series)
-                        log('[' + series.title + '] ' + res.nModified + ' series modified, should be 1')
-                        if (res.nModified != 1) {
-                            return { statusCode: 500, body: "series updateDate has not been updated" }
-                        }
+                        seriesToDelete.push(series.extId)
+                        seriesToInsert.push(obj)
     
                         // save new eps to find out if episodes air today
                         oldEps = eps
 
+                        epsToInsert = epsToInsert.concat(eps)
+
                     } else {
-                        log('[' + series.title + '] No update necessary.')
+                        log('[' + series.title + '] continue')
                     }
 
                     oldEps.forEach(function(ep){
@@ -222,6 +226,23 @@ exports.handler = async (event, context) => {
                     log('error while updating series with id: ' + series.extId + ' - ' + err)
                 }
             }
+
+            // update episodes, critically if fails
+            try{
+                log("delete series")
+                await Series.deleteMany({extId: { $in: seriesToDelete }})
+                log("insert series")
+                await Series.insertMany(seriesToInsert)
+                log("delete episodes")
+                await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
+                log("insert episodes")
+                await Episodes.insertMany(epsToInsert)
+                log("inserted")
+            } catch (err) {
+                log(">>>>>")
+                log("error while updating series or episodes: "+err)
+                log("<<<<<")
+            }
         }
 
         // use result and send mail
@@ -229,7 +250,7 @@ exports.handler = async (event, context) => {
 
         const sendEmailBoolean = event.queryStringParameters.sendEmail
         console.log("sendEmail: "+sendEmailBoolean)
-        if (sendEmailBoolean){
+        if (sendEmailBoolean && process.env.NODE_ENV === 'production'){
             for (email in result){
                 await sendEmail(email, result[email])
             }
@@ -240,5 +261,7 @@ exports.handler = async (event, context) => {
         Sentry.captureException(err)
 		console.log('deploy-succeeded function end: ' + err)
 		return { statusCode: 500, body: String(err) }
-	}
+	} finally {
+        log("end function: "+new Date())
+    }
 }

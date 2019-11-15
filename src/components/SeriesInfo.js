@@ -26,31 +26,25 @@ function SeriesInfo ({ match }) {
 
   const columns = [
     {
-      name: 'Status',
-      selector: 'index',
-      sortable: true,
-      cell: (data) => <div>{data.watched ? "watched":"not watched"}</div>,
-      width: '15%',
-      resizable: true,
-    },
-    {
       name: 'Number',
       selector: 'seasonEpisodeNotation',
       sortable: true,
       width: '10%',
+      resizable: true,
     },
     {
       name: 'Title',
       selector: 'title',
       sortable: true,
       width: '40%',
+      resizable: true,
     },
     {
       name: 'Airdate',
       selector: 'airstamp',
       sortable: true,
       format: d => moment(d.airstamp).format('llll'),
-      width: '20%',
+      width: '30%',
       resizable: true,
     },
     {
@@ -77,9 +71,9 @@ function SeriesInfo ({ match }) {
   ];
   
   const { width } = windowDimensions
-  let imageWidth = Math.min(1280,width - 20)
+  let imageWidth = Math.min(1280,width - 25)
   const ExpandedComponent = ({ data }) => (
-    <div>
+    <div style={{width: document.innerWidth}}>
       {/* TODO: scrollPosition is added to props. performance? */}
       <LazyLoadImage
         width={imageWidth}
@@ -168,6 +162,7 @@ function SeriesInfo ({ match }) {
           title="Episode List"
           columns={columns}
           data={episodesList}
+          style={{width: document.innerWidth}}
           conditionalRowStyles={conditionalRowStyles}
           expandableRows
           highlightOnHover

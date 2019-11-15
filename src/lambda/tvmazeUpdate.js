@@ -6,7 +6,7 @@ import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 
 import { sendEmail } from '../helper/emailNotification.js'
-import { assureHttpsUrl } from '../helper/helperFunctions'
+import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
 
 const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
@@ -67,21 +67,23 @@ function diff(newEp, oldEp){
     }
 
     var changes = []
+    /*
     if (newEp.title != oldEp.title){
         changes.push(change('title', oldEp.title, newEp.title))
     }
-    if (newEp.seasonNr != oldEp.seasonNr){
+    */
+    if (newEp.seasonNr !== oldEp.seasonNr){
         changes.push(change('seasonNr', oldEp.seasonNr, newEp.seasonNr))
     }
-    if (newEp.episodeNr != oldEp.episodeNr){
+    if (newEp.episodeNr !== oldEp.episodeNr){
         changes.push(change('episodeNr', oldEp.episodeNr, newEp.episodeNr))
     }
-    if (newEp.airstamp != oldEp.airstamp){
+    if (new Date(newEp.airstamp).toDateString() !== new Date(oldEp.airstamp).toDateString()){
         changes.push(change('airstamp', oldEp.airstamp, newEp.airstamp))
     }
 
     if (changes.length > 0){
-        return 's'+newEp.seasonNr+'e'+newEp.episodeNr+':<br>'+changes.join('<br>')
+        return seasonEpisodeNotation(newEp.seasonNr,newEp.episodeNr)+':<br>'+changes.join('<br>')
     } else {
         return ''
     }
@@ -90,7 +92,7 @@ function diff(newEp, oldEp){
 exports.handler = async (event, context) => {
 	context.callbackWaitsForEmptyEventLoop = false
     
-    log("init function: "+new Date())
+    log(new Date()+": init function")
 
 	try{
 		// mongoDB
@@ -113,7 +115,7 @@ exports.handler = async (event, context) => {
             },
         ])
 
-        log('Found series: ' + seriesList.length)
+        log(new Date()+': Found series: ' + seriesList.length)
         
         //tvmaze
         const response = await getTvMazeData()
@@ -135,14 +137,14 @@ exports.handler = async (event, context) => {
                         { $sort : { seasonNr : 1, episodeNr: 1 } },
                     ])
 
-                    // measurement ms/s
+                    // change measurement to milliseconds for comparison
                     const seriesResponseDate = response[series.extId]*1000
     
                     if(Date.parse(series.lastUpdated) < seriesResponseDate){
                         // episodes need to be updated
 
                         // find exact differences and save in some object
-    
+
                         epsToDelete.push(seriesId)
     
                         let info = await getInformationForSeries(seriesId)
@@ -185,11 +187,6 @@ exports.handler = async (event, context) => {
                             "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
                         }
 
-                        // TODO:
-                        // - measure difference in episode.length and series.nrOfEpisodes
-                        // - send notification here
-                        // - also check airdate
-                        
                         seriesToDelete.push(series.extId)
                         seriesToInsert.push(obj)
     
@@ -198,10 +195,12 @@ exports.handler = async (event, context) => {
 
                         epsToInsert = epsToInsert.concat(eps)
 
-                    } else {
-                        log('[' + series.title + '] continue')
                     }
 
+                    // iterate over all episodes
+                    // if the episode aired yesterday, go over every user that is subscribed to this series
+                    // go over every userSeries and only send email if episode.seasonNr equals current Season of this user
+                    // also only send email if receiveNotification for this series is true
                     oldEps.forEach(function(ep){
                         var today = new Date()
                         today.setHours(22,0,0,0)
@@ -212,8 +211,13 @@ exports.handler = async (event, context) => {
                         if (new Date(ep.airstamp) > yesterday && new Date(ep.airstamp) < today){
                             var email = []
                             series.user.forEach(function(user) {
-                                // look in series.userseries if receiveNotification == true
-                                email.push(user.email)
+                                var isInterested = false
+                                series.userseries.forEach(function(us){
+                                    if (us.userId===user.userId && series.extId===us.seriesId){
+                                        isInterested = us.receiveNotification && oldEps[us.lastWatchedEpisode+1].seasonNr===ep.seasonNr
+                                    }
+                                })
+                                if(isInterested) email.push(user.email)
                             })
                             var description = 'notiInfo'
                             var update = 's'+ep.seasonNr+'e'+ep.episodeNr+':'+ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
@@ -223,21 +227,16 @@ exports.handler = async (event, context) => {
                     })
                 } catch(err){
                     Sentry.captureException(err)
-                    log('error while updating series with id: ' + series.extId + ' - ' + err)
+                    log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
                 }
             }
 
             // update episodes, critically if fails
             try{
-                log("delete series")
                 await Series.deleteMany({extId: { $in: seriesToDelete }})
-                log("insert series")
                 await Series.insertMany(seriesToInsert)
-                log("delete episodes")
                 await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
-                log("insert episodes")
                 await Episodes.insertMany(epsToInsert)
-                log("inserted")
             } catch (err) {
                 log(">>>>>")
                 log("error while updating series or episodes: "+err)

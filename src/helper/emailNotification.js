@@ -1,3 +1,4 @@
+import { url } from 'inspector';
 
 // send Email Notifications to users if there is informations about their series
 
@@ -27,11 +28,15 @@ export async function sendEmail(receiver, src) {
 		const {notiInfo, changeInfo} = src
 
 		if (!isEmpty(notiInfo)){
+			var uid = require('uid-safe')
+
 			html += notiIntro
 			for (const seriesTitle in notiInfo) {
 				html += '<b>'+seriesTitle+'</b>:<br>'
 				notiInfo[seriesTitle].forEach(e => {
-					html += ' - ' + e + '<br>'
+					var uniqueUid = uid.sync(18)
+					var link = process.env.URL+'/event/'+uniqueUid
+					html += ' - ' + e + ' - <a href="'+link+'">click here</a> if you watched this episode</a><br>'
 				})
 				html += '<br>'
 			}
@@ -47,11 +52,12 @@ export async function sendEmail(receiver, src) {
 		}
 
 		html += infos + '</html>'
-
+		
 		const {result,full} = await send({
 			to: receiver,
 			html: html,
 		})
+		
 		console.log('sending mail successful: ' + result)
 	} catch(error) {
 		console.log('Error while sending email: ' + error)

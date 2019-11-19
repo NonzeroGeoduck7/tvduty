@@ -20,9 +20,9 @@ exports.handler = async (event, context) => {
 	  ]);
 	  
     const response = {
-            msg: 'Series successfully found',
-            data: series
-          }
+      msg: 'Series successfully found',
+      data: series
+    }
     
     return {
       statusCode: 200,

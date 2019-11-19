@@ -8,6 +8,8 @@ import { BrowserRouter, Route, Switch } from "react-router-dom";
 import SeriesTable from './components/SeriesTable'
 import SeriesInfo from './components/SeriesInfo'
 import Add from './components/Add'
+import EventResult from './components/EventResult'
+import NotLoggedIn from './components/NotLoggedIn'
 
 function App(props) {
   const { isAuthenticated, loading } = useAuth0();
@@ -24,12 +26,19 @@ function App(props) {
         <header>
           <NavBar />
         </header>
-        {isAuthenticated && <Switch>
-            <Route path="/" exact component={SeriesTable} />
-            <Route path="/series/:extId" component={SeriesInfo} />
-            <Route path="/add" component={Add} />
-          </Switch>}
-        {!isAuthenticated && <div>Please log in to see this page</div>}
+        <Switch>
+          {isAuthenticated ? <React.Fragment>
+              <Route path="/" exact component={SeriesTable} />
+              <Route path="/series/:extId" component={SeriesInfo} />
+              <Route path="/add" component={Add} />
+              <Route path="/event/:eventUid" component={EventResult} />
+            </React.Fragment> : 
+            <React.Fragment>
+              <Route path="/" exact component={NotLoggedIn} />
+              <Route path="/event/:eventUid" component={EventResult} />
+            </React.Fragment>
+          }
+        </Switch>
       </BrowserRouter>
     </div>
   );

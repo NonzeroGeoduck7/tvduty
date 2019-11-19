@@ -176,7 +176,7 @@ exports.handler = async (event, context) => {
                         var seriesTitle = series.title
 
                         eps.forEach(function(ep, idx){
-                            result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
+                            //result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
                         })
                         
                         // series object is changed and written back to db
@@ -272,7 +272,7 @@ exports.handler = async (event, context) => {
                         if(isInterested) email.push(user.email)
                     })
                     var description = 'notiInfo'
-                    var update = seasonEpisodeNotation(ep.seasonNr,ep.episodeNr)+':'+ep.title+'<br>'
+                    var update = seasonEpisodeNotation(ep.seasonNr,ep.episodeNr)+':'+ep.title
                     
                     result = addToMailBody(result, email, description, ep.series[0].title, update)
                 })

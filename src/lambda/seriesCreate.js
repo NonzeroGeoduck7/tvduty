@@ -49,7 +49,8 @@ exports.handler = async (event, context, callback) => {
 			  _id: mongoose.Types.ObjectId(),
 			  userId: userId,
 			  seriesId: extId,
-			  currentEpisode: 0,
+			  lastWatchedEpisode: -1,
+			  currentSeason: 1,
 			  receiveNotification: true,
 			  __v: 0
 		  },

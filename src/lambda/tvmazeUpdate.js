@@ -63,7 +63,7 @@ function change(name, from, to){
 
 function diff(newEp, oldEp){
     if (typeof oldEp === 'undefined'){
-        return 'new Episode: s'+newEp.seasonNr+'e'+newEp.episodeNr+': <b>'+newEp.title+'</b> '+(newEp.airstamp==null?'airdate unknown':'will air '+newEp.airstamp)+'.'
+        return 'new Episode: '+seasonEpisodeNotation(newEp.seasonNr,newEp.episodeNr)+': <b>'+newEp.title+'</b> '+(newEp.airstamp==null?'airdate unknown':'will air '+newEp.airstamp)+'.'
     }
 
     var changes = []
@@ -130,18 +130,19 @@ exports.handler = async (event, context) => {
             var epsToDelete = []
             for (const series of seriesList){
                 try {
-                    // needed for check if episodes air today
-                    let seriesId = series.extId
-                    var oldEps = await Episodes.aggregate([
-                        { $match: { seriesId: parseInt(seriesId) } },
-                        { $sort : { seasonNr : 1, episodeNr: 1 } },
-                    ])
-
                     // change measurement to milliseconds for comparison
                     const seriesResponseDate = response[series.extId]*1000
     
                     if(Date.parse(series.lastUpdated) < seriesResponseDate){
                         // episodes need to be updated
+                        let seriesId = series.extId
+                        var oldEps = await Episodes.aggregate([
+                            { $match: { $and: [
+                                { seriesId: parseInt(seriesId) },
+                                { "airstamp": {"$gte":  new Date().toISOString()} }] }
+                            },
+                            { $sort : { seasonNr : 1, episodeNr: 1 } },
+                        ])
 
                         // find exact differences and save in some object
 
@@ -170,14 +171,15 @@ exports.handler = async (event, context) => {
                         series.user.forEach(function(user) {
                             email.push(user.email)
                         })
+                        
                         var description = 'changeInfo'
                         var seriesTitle = series.title
 
                         eps.forEach(function(ep, idx){
                             result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
                         })
-    
-                        // series object is changed and written back to db, check for changes in seriesObject here.
+                        
+                        // series object is changed and written back to db
                         let obj = {
                             "title": series.title,
                             "extId": series.extId,
@@ -186,6 +188,8 @@ exports.handler = async (event, context) => {
                             "nrOfEpisodes": eps.length,
                             "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
                         }
+                        // check for changes in seriesObject
+                        
 
                         seriesToDelete.push(series.extId)
                         seriesToInsert.push(obj)
@@ -196,37 +200,7 @@ exports.handler = async (event, context) => {
                         epsToInsert = epsToInsert.concat(eps)
 
                     }
-
-                    // iterate over all episodes
-                    // if the episode aired yesterday, go over every user that is subscribed to this series
-                    // go over every userSeries and only send email if episode.seasonNr equals current Season of this user
-                    // also only send email if receiveNotification for this series is true
-                    oldEps.forEach(function(ep){
-                        var today = new Date()
-                        today.setHours(22,0,0,0)
-                        
-                        var yesterday = new Date()
-                        yesterday.setDate(yesterday.getDate() - 1)
-
-                        if (new Date(ep.airstamp) > yesterday && new Date(ep.airstamp) < today){
-                            var email = []
-                            series.user.forEach(function(user) {
-                                var isInterested = false
-                                series.userseries.forEach(function(us){
-                                    if (us.userId===user.userId && series.extId===us.seriesId){
-                                        isInterested = us.receiveNotification && oldEps[us.lastWatchedEpisode+1].seasonNr===ep.seasonNr
-                                    }
-                                })
-                                if(isInterested) email.push(user.email)
-                            })
-                            var description = 'notiInfo'
-                            var update = 's'+ep.seasonNr+'e'+ep.episodeNr+':'+ep.title + ' ('+ new Date(ep.airstamp).toDateString() + ' at '+new Date(ep.airstamp).toTimeString()+')<br>'
-                            
-                            result = addToMailBody(result, email, description, series.title, update)
-                        }
-                    })
                 } catch(err){
-                    Sentry.captureException(err)
                     log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
                 }
             }
@@ -241,6 +215,69 @@ exports.handler = async (event, context) => {
                 log(">>>>>")
                 log("error while updating series or episodes: "+err)
                 log("<<<<<")
+            }
+
+            try {
+                // iterate over all episodes
+                // if the episode aired yesterday, go over every user that is subscribed to this series
+                // go over every userSeries and only send email if episode.seasonNr equals current Season of this user
+                // also only send email if receiveNotification for this series is true
+                var today = new Date()
+                today.setHours(22,0,0,0)
+                
+                var yesterday = new Date()
+                yesterday.setDate(yesterday.getDate() - 1)
+                
+                var epsAiringToday = await Episodes.aggregate([
+                    { $match: {"airstamp": {
+                            $gte: new Date(yesterday).toISOString(),
+                            $lte: new Date(today).toISOString()
+                    } } },
+                    {
+                        $lookup: {
+                            from: 'series',
+                            localField: 'seriesId',
+                            foreignField: 'extId',
+                            as: 'series'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'userseries',
+                            localField: 'seriesId',
+                            foreignField: 'seriesId',
+                            as: 'userseries'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'user',
+                            localField: 'userseries.userId',
+                            foreignField: 'userId',
+                            as: 'user'
+                        }
+                    },
+                ])
+
+                // create notification if interested
+                epsAiringToday.forEach(function(ep){
+                    var email = []
+                    ep.user.forEach(function(user) {
+                        var isInterested = false
+                        ep.userseries.forEach(function(us){
+                            if (us.userId===user.userId && ep.series[0].extId===us.seriesId){
+                                isInterested = us.receiveNotification && us.currentSeason===ep.seasonNr
+                            }
+                        })
+                        if(isInterested) email.push(user.email)
+                    })
+                    var description = 'notiInfo'
+                    var update = seasonEpisodeNotation(ep.seasonNr,ep.episodeNr)+':'+ep.title+'<br>'
+                    
+                    result = addToMailBody(result, email, description, ep.series[0].title, update)
+                })
+            } catch(err){
+                console.log('error while going through episodes airing today: '+err)
             }
         }
 
@@ -257,10 +294,9 @@ exports.handler = async (event, context) => {
 
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err) {
-        Sentry.captureException(err)
 		console.log('deploy-succeeded function end: ' + err)
 		return { statusCode: 500, body: String(err) }
 	} finally {
-        log("end function: "+new Date())
+        log(new Date()+": end function")
     }
 }

@@ -17,6 +17,11 @@ const schema = new mongoose.Schema({
     required: [true, 'lastWatchedEpisode field is required'],
     default: -1,
   },
+  currentSeason: {
+    type: Number,
+    required: [true, 'currentSeason field is required'],
+    default: 1,
+  },
   receiveNotification: {
     type: Boolean,
     required: [true, 'receiveNotification field is required']

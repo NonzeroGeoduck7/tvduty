@@ -1,46 +1,3 @@
-import { url } from 'inspector'
-
-// send Email Notifications to users if there is informations about their series
-
-const mustache = require('mustache')
-const timestamp = require("performance-now")
-
-const send = require('gmail-send')({
-	user: process.env.GMAIL_USERNAME,
-	pass: process.env.GMAIL_PASSWORD,
-	subject: '[tvDuty] ['+new Date().toDateString()+'] status',
-})
-
-export async function sendEmail(receiver, obj) {
-	try {
-		var time1 = timestamp()
-		var html = mustache.render(template, obj)
-		var time2 = timestamp()
-		console.log('mustache rendering: '+(time2-time1)+'ms')
-		
-		var randomEntry = _.sample(obj.newEpisodes)
-		if (obj.newEpisodes.length>1){
-			var subjectString = 'New episodes from '+randomEntry.seriesTitle+' and other shows available'
-		} else {
-			var subjectString = 'New episode from '+randomEntry.seriesTitle+' available'
-		}
-		subjectString = subjectString+', '+new Date().toDateString()
-		
-		const {result,full} = await send({
-			from: '"tvDuty"',
-			subject: subjectString,
-			to: receiver,
-			html: html,
-		})
-		
-		console.log('sending mail successful: ' + result)
-	} catch(error) {
-		console.log('Error while sending email: ' + error)
-	}
-}
-
-const template = ""+
-`
 <html>
 <head>
 	<title>title</title>
@@ -53,9 +10,6 @@ const template = ""+
 		}
 		.transparentBackgroundTable tr {
 			background-color: transparent;
-		}
-		.buttonCell {
-			padding-top: 10px;
 		}
 		.button {
 			color: #494949 !important;
@@ -110,17 +64,17 @@ const template = ""+
 											<img src="{{.}}" alt="" style="width: 100%"/>
 										</td>
 										{{/episodeImage}}
-										<td style="height: 168px; overflow-y: auto">
-											{{episodeSummary}}<br><br>exact airdate: {{episodeAirstamp}}.
+										<td>
+											{{episodeSummary}}<br>exact airdate: {{episodeAirstamp}}.
 										</td>
 									</tr>
 									<tr>
-										<td class="buttonCell" align="center">
+										<td class="button_cell" align="center">
 											<a class="button" href="{{showOnWebsiteUrl}}" target="_blank" rel="nofollow noopener">
 												Open Website
 											</a>
 										</td>
-										<td class="buttonCell" align="center">
+										<td class="button_cell" align="center">
 											<a class="button" href="{{episodeWatchedUrl}}" target="_blank" rel="nofollow noopener">
 												Mark as watched
 											</a>
@@ -151,4 +105,3 @@ const template = ""+
 </center>
 </body>
 </html>
-`

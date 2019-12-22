@@ -292,7 +292,8 @@ exports.handler = async (event, context) => {
                         var isInterested = false
                         ep.userseries.forEach(function(us){
                             if (us.userId===user.userId && ep.series[0].extId===us.seriesId){
-                                isInterested = us.receiveNotification && us.currentSeason===ep.seasonNr
+                                isInterested =  us.receiveNotification
+                                                && us.currentSeason===ep.seasonNr
                             }
                         })
                         if(isInterested) email.push(user.email)

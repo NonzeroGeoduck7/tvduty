@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react'
 import SeriesElement from './SeriesElement'
 import Loading from './Loading'
-import { Link } from "react-router-dom"
-import StackGrid from "react-stack-grid"
-import { trackWindowScroll } from 'react-lazy-load-image-component';
+import { Link } from 'react-router-dom'
+import StackGrid from 'react-stack-grid'
+import { trackWindowScroll } from 'react-lazy-load-image-component'
+import * as Sentry from '@sentry/browser'
 
-import { useAuth0 } from "../react-auth0-wrapper"
-import { getWindowDimensions } from "../helper/helperFunctions"
+import { useAuth0 } from '../react-auth0-wrapper'
+import { getWindowDimensions } from '../helper/helperFunctions'
 
 function SeriesTable(scrollPosition) {
     
@@ -41,7 +42,7 @@ function SeriesTable(scrollPosition) {
         })
         .catch(err => console.log('Error retrieving products: ', err))
     }, [user.sub])
-    
+
     const { width, height } = windowDimensions
 
     // at least 2 items next to each other, and at max 10 items next to each other, minus some pixels for the vertical scrollbar, if any.
@@ -57,17 +58,24 @@ function SeriesTable(scrollPosition) {
 
             {seriesListLoading ? <Loading /> :
                 <StackGrid columnWidth={columnWidth}>
-                    {seriesList.map(c => 
-                        <SeriesElement
+                    {seriesList.map(c => {
+                        var lastWatchedEpisode = -1
+                        const userSeriesEntry = c.userseries.filter(entry=>entry.userId===user.sub)
+                        if (userSeriesEntry.length === 1){
+                            lastWatchedEpisode = userSeriesEntry[0].lastWatchedEpisode
+                        } else {
+                            Sentry.captureMessage("Error, more than one user - series pair for series '"+c.title+"' with id "+c.extId)
+                        }
+                        return <SeriesElement
                             scrollPosition={scrollPosition}
                             key={c.extId}
                             width={columnWidth/1.25}
-                            lastWatchedEpisode={c.userseries[0].lastWatchedEpisode}
+                            lastWatchedEpisode={lastWatchedEpisode}
                             nrOfEpisodes={c.nrOfEpisodes}
                             title={c.title}
                             poster={c.poster}
                             extId={c.extId} />
-                    )}
+                    })}
                 </StackGrid>
             }
         </div>

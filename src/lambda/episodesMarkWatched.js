@@ -18,40 +18,36 @@ exports.handler = async (event, context, callback) => {
     
     console.log("mark "+seriesId+" "+seasonEpisodeNotation(seasonNr, episodeNr)+" as watched.")
 
-    // find out what index the episode in overall episode list has. start counting with 0.
-  	var query = await Episodes.aggregate([{
-        $match: {
-          $and: [{
-            seriesId: seriesId,
-          },{
-            // constraints on season/episode
-            $or: [{
-              seasonNr: {
-                $lt: seasonNr,
-              },
+    var query = await Episodes.aggregate([{
+      $match: {
+        $and: [{
+          seriesId: seriesId,
+        },{
+          // constraints on season/episode
+          $or: [{
+            seasonNr: {
+              $lt: seasonNr,
             },
-            {
-              $and: [{
-                seasonNr: seasonNr,
-                episodeNr: {
-                  $lte: episodeNr,
-                }
-              }]
+          },
+          {
+            $and: [{
+              seasonNr: seasonNr,
+              episodeNr: {
+                $lte: episodeNr,
+              }
             }]
           }]
-        }
-      },
-      {
-        $count: "episodeCount"
+        }]
       }
-    ])
+    },{
+      $count: "episodeCount"
+    }])
 
     // mark as watched
     await UserSeries.findOneAndUpdate(
       { userId: userId, seriesId: seriesId },
       { $set: { "lastWatchedEpisode" : parseInt(query[0].episodeCount)-1, "currentSeason" : seasonNr } } // -1 because of index vs count
     )
-
 	
     return {
       statusCode: 201,

@@ -11,6 +11,9 @@
 		.transparentBackgroundTable tr {
 			background-color: transparent;
 		}
+		.buttonCell {
+			padding-top: 10px;
+		}
 		.button {
 			color: #494949 !important;
 			text-transform: uppercase;
@@ -64,17 +67,17 @@
 											<img src="{{.}}" alt="" style="width: 100%"/>
 										</td>
 										{{/episodeImage}}
-										<td>
-											{{episodeSummary}}<br>exact airdate: {{episodeAirstamp}}.
+										<td style="height: 168px; overflow-y: auto">
+											{{episodeSummary}}<br><br>exact airdate: {{episodeAirstamp}}.
 										</td>
 									</tr>
 									<tr>
-										<td class="button_cell" align="center">
+										<td class="buttonCell" align="center">
 											<a class="button" href="{{showOnWebsiteUrl}}" target="_blank" rel="nofollow noopener">
 												Open Website
 											</a>
 										</td>
-										<td class="button_cell" align="center">
+										<td class="buttonCell" align="center">
 											<a class="button" href="{{episodeWatchedUrl}}" target="_blank" rel="nofollow noopener">
 												Mark as watched
 											</a>

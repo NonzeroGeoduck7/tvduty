@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/browser'
 
 function EventResult ({ match }) {
 
-  const { params: { eventUid } } = match
+  const { params: { eventType, eventUid } } = match
 
   let [loading, setLoading] = useState(false)
   let [note, setNote] = useState()
@@ -27,13 +27,13 @@ function EventResult ({ match }) {
 
     setLoading(true)
 
-    postAPI('processEvent', {eventUid: eventUid})
+    postAPI('processEvent', {eventType: eventType, eventUid: eventUid})
       .then(()=> setLoading(false))
       .catch(err => {
         console.log('process event error: ', err)
         Sentry.captureException('process event error: ', err)
       })
-  }, [eventUid])
+  }, [eventType, eventUid])
 
   return (
     loading ? <div>processing request...</div> : <div>{note}</div>

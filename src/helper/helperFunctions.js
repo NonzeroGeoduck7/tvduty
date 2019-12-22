@@ -1,3 +1,4 @@
+import '../lambda/episodesModel'
 
 export const seasonEpisodeNotation = (seasonNr, episodeNr) => {
     var season = seasonNr
@@ -7,6 +8,12 @@ export const seasonEpisodeNotation = (seasonNr, episodeNr) => {
     if (episode < 10) episode = '0'+episode
 
     return 's'+season+'e'+episode
+}
+
+export const markEpisodeAsWatched = async (seriesId, userId, seasonNr, episodeNr) => {
+
+    // find out what index the episode in overall episode list has. start counting with 0.
+    
 }
 
 export const assureHttpsUrl = (url) => {

@@ -4,6 +4,7 @@ import db from '../lambda/server'
 import * as Sentry from '@sentry/browser'
 import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
+import Event from '../lambda/eventModel'
 
 import { sendEmail } from '../helper/emailNotification.js'
 import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
@@ -49,13 +50,14 @@ function addToMailBody(result, email, description, seriesTitle, update){
         return result
     
     email.forEach(function(email){
-        if (typeof(result[email]) === 'undefined')
-            result[email] = {'changeInfo':{}, "notiInfo":{}}
-        if (typeof(result[email][description][seriesTitle]) === 'undefined'){
-            result[email][description][seriesTitle]=[]
+        if (typeof(result[email.email]) === 'undefined')
+            result[email.email] = {'changeInfo':{}, "notiInfo":{}}
+        if (typeof(result[email.email][description][seriesTitle]) === 'undefined'){
+            result[email.email][description][seriesTitle]=[]
         }
 
-        result[email][description][seriesTitle].push(update)
+        result[email.email].userId = email.userId
+        result[email.email][description][seriesTitle].push(update)
     })
 
     return result
@@ -98,8 +100,12 @@ function isEmpty(obj) {
 	return true;
 }
 
-function generateEventUrl(uniqueUid) {
-	return process.env.URL+'/event/'+uniqueUid
+function generateEventEpisodeWatchedUrl(uniqueUid) {
+	return process.env.URL+'/event/1/'+uniqueUid
+}
+
+function generateEventNotificationUrl(uniqueUid) {
+    return process.env.URL+'/event/2/'+uniqueUid
 }
 
 function generateSeriesUrl(seriesId) {
@@ -139,8 +145,6 @@ exports.handler = async (event, context) => {
         ])
 
         var timeEndQuery = timestamp()
-
-        log(new Date()+': Found series: ' + seriesList.length)
         
         //tvmaze
         const response = await getTvMazeData()
@@ -296,12 +300,19 @@ exports.handler = async (event, context) => {
                                                 && us.currentSeason===ep.seasonNr
                             }
                         })
-                        if(isInterested) email.push(user.email)
+                        if(isInterested){
+                            email.push({
+                                "email": user.email,
+                                "userId": user.userId
+                            })
+                        }
                     })
                     var description = 'notiInfo'
                     var update = {
                         "seriesTitle": ep.series[0].title,
                         "seriesId": ep.series[0].extId,
+                        "seasonNr": ep.seasonNr,
+                        "episodeNr": ep.episodeNr,
                         "seasonEpisodeNotation": seasonEpisodeNotation(ep.seasonNr,ep.episodeNr),
                         "episodeTitle": ep.title,
                         "episodeImage": ep.image,
@@ -316,35 +327,43 @@ exports.handler = async (event, context) => {
             }
 
             var timeEndCreateMailObject = timestamp()
-
         }
 
         // use result and send mail
-
-        const sendEmailBoolean = event.queryStringParameters.sendEmail
-        console.log("sendEmail: "+sendEmailBoolean)
-        if (sendEmailBoolean && process.env.NODE_ENV === 'production'){
+        if (event.queryStringParameters.sendEmail && process.env.NODE_ENV === 'production'){
             var timeStartRewriteObject = timestamp()
+            var eventsToStore = []
             for (email in result){
                 
                 result[email].timespan = {
                     "start": yesterday.toUTCString(),
                     "end": today.toUTCString()
                 }
-                const {notiInfo, changeInfo} = result[email]
+                const {userId, notiInfo, changeInfo} = result[email]
 
                 result[email]["newEpisodes"] = []
                 for (const seriesTitle in notiInfo){
                     var eps = []
                     notiInfo[seriesTitle].forEach(e => {
-                        e.episodeWatchedUrl = generateEventUrl(uid.sync(18))
+
+                        const episodeWatchedUid = uid.sync(18)
+                        eventsToStore.push({
+                            "eventUid": episodeWatchedUid,
+                            "userId": userId,
+                            "seriesId": e.seriesId,
+                            "seasonNr":  e.seasonNr,
+                            "episodeNr": e.episodeNr,
+                            "dateEventCreated": new Date().toISOString()
+                        })
+
+                        e.episodeWatchedUrl = generateEventEpisodeWatchedUrl(episodeWatchedUid)
                         eps.push(e)
                     })
                     
                     result[email]["newEpisodes"].push({
                         "seriesTitle": seriesTitle,
                         "showOnWebsiteUrl": generateSeriesUrl(eps[0].seriesId),
-                        "turnOffNotificationsUrl": generateEventUrl(uid.sync(18)),
+                        "turnOffNotificationsUrl": generateEventNotificationUrl(uid.sync(18)),
                         "episodes": eps
                     })
                     result[email]["notiInfo"]["seriesTitle"] = null
@@ -362,6 +381,11 @@ exports.handler = async (event, context) => {
                 }
                 */
             }
+
+            // delete old events and insert new ones
+            const dateTwoMonthsInPast = new Date().setMonth(new Date().getMonth()-2)
+            await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
+            await Event.insertMany(eventsToStore)
 
             var timeEndRewriteObject = timestamp()
 
@@ -381,7 +405,5 @@ exports.handler = async (event, context) => {
 	} catch (err) {
 		console.log('deploy-succeeded function end: ' + err)
 		return { statusCode: 500, body: String(err) }
-	} finally {
-        log(new Date()+": end function")
-    }
+	}
 }

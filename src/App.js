@@ -31,11 +31,11 @@ function App(props) {
               <Route path="/" exact component={SeriesTable} />
               <Route path="/series/:extId" component={SeriesInfo} />
               <Route path="/add" component={Add} />
-              <Route path="/event/:eventUid" component={EventResult} />
+              <Route path="/event/:eventType/:eventUid" component={EventResult} />
             </React.Fragment> : 
             <React.Fragment>
               <Route path="/" exact component={NotLoggedIn} />
-              <Route path="/event/:eventUid" component={EventResult} />
+              <Route path="/event/:eventType/:eventUid" component={EventResult} />
             </React.Fragment>
           }
         </Switch>

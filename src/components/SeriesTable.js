@@ -6,15 +6,36 @@ import { Link } from 'react-router-dom'
 import StackGrid from 'react-stack-grid'
 import { trackWindowScroll } from 'react-lazy-load-image-component'
 import * as Sentry from '@sentry/browser'
+import KeyboardEventHandler from 'react-keyboard-event-handler';
 
 import { useAuth0 } from '../react-auth0-wrapper'
 import { getWindowDimensions } from '../helper/helperFunctions'
 
+
 function SeriesTable(scrollPosition) {
-    
+
+    function handleKeyPress(key){
+        switch(key) {
+            case "esc":
+                setSearchString('')
+                break
+            case "backspace":
+                setSearchString(searchString.substr(0,Math.max(0,searchString.length-1)))
+                break
+            case "space":
+                setSearchString(searchString+' ')
+                break
+            default:
+                setSearchString(searchString + key)
+                break
+        }
+    }
+
     let [seriesList, setSeriesList] = useState([])
+    let [originalSeriesList, setOriginalSeriesList] = useState([])
     let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
     let [seriesListLoading, setSeriesListLoading] = useState(false)
+    let [searchString, setSearchString] = useState('')
 
     const { user } = useAuth0()
     useEffect(() => {
@@ -38,10 +59,15 @@ function SeriesTable(scrollPosition) {
         .then(response => {
           let filtered = response.data.filter(e=>e.userseries.filter(e1=>e1.userId===user.sub).length > 0)
           setSeriesList(filtered)
+          setOriginalSeriesList(filtered)
           setSeriesListLoading(false)
         })
         .catch(err => console.log('Error retrieving products: ', err))
     }, [user.sub])
+
+    useEffect(() => {
+        setSeriesList(originalSeriesList.filter(s=>s.title.toLowerCase().includes(searchString)))
+    }, [searchString])
 
     const { width, height } = windowDimensions
 
@@ -55,6 +81,10 @@ function SeriesTable(scrollPosition) {
             <Link to="/add">
                 <button>&#43;</button>
             </Link>
+
+            { searchString &&
+            <p>filtered to titles containing: '{searchString}', press ESC to remove the filter.</p>
+            }
 
             {seriesListLoading ? <Loading /> :
                 <StackGrid columnWidth={columnWidth}>
@@ -78,7 +108,12 @@ function SeriesTable(scrollPosition) {
                     })}
                 </StackGrid>
             }
+            <KeyboardEventHandler
+                handleKeys={['alphanumeric', 'space', 'backspace', 'esc']}
+                isExclusive={true}
+                onKeyEvent={(key, e) => handleKeyPress(key)} />
         </div>
+        
     )
 }
 

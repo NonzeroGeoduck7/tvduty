@@ -28,6 +28,6 @@ const schema = new mongoose.Schema({
     type: String,
     required: [true, 'dateEventCreated field is required']
   },
-}),
-Event = mongoose.model('event', schema)
-export default Event
+})
+
+export default mongoose.model('events', schema)

@@ -10,6 +10,9 @@ import SeriesInfo from './components/SeriesInfo'
 import Add from './components/Add'
 import EventResult from './components/EventResult'
 import NotLoggedIn from './components/NotLoggedIn'
+import SettingsPage from './components/SettingsPage'
+
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 function App(props) {
   const { isAuthenticated, loading } = useAuth0();
@@ -31,6 +34,7 @@ function App(props) {
               <Route path="/" exact component={SeriesTable} />
               <Route path="/series/:extId" component={SeriesInfo} />
               <Route path="/add" component={Add} />
+              <Route path="/settings" component={SettingsPage} />
               <Route path="/event/:eventType/:eventUid" component={EventResult} />
             </React.Fragment> : 
             <React.Fragment>

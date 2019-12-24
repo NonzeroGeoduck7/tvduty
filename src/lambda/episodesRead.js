@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
       data: episodes
     }
     
-	console.log('Episodes successfully read from DB.')
+	  console.log('Episodes successfully read from DB.')
 	
     return {
       statusCode: 200,

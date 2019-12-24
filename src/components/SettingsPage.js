@@ -71,17 +71,21 @@ function SettingsPage () {
 
   return (
     <Wrapper>
-        <Title>Settings</Title>
+        {loading?
+        <p>loading</p>:<div>
+            <Title>Settings</Title>
 
-        <label>Email:</label>
-        <InputText
-            type="email"
-            value={email}
-            onChange={handleEmailChange}
-        />
+            <Label>enter new email (currently is {settings.email}):</Label>
+            <InputText
+                type="email"
+                value={email}
+                onChange={handleEmailChange}
+            />
 
-        <Button onClick={handleSaveSettings}>Save</Button>
-        <CancelButton>Cancel</CancelButton>
+            <Button onClick={handleSaveSettings}>Save</Button>
+            <CancelButton>Cancel</CancelButton>
+        </div>
+        }
     </Wrapper>
   )
 }

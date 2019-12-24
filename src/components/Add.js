@@ -1,8 +1,8 @@
 // src/components/Add.js
 // add new series to tracked list
 import React, { useState } from 'react'
-import { Link } from "react-router-dom"
-import { useAuth0 } from "../react-auth0-wrapper"
+import { Link } from 'react-router-dom'
+import { useAuth0 } from '../react-auth0-wrapper'
 import LoadingOverlay from 'react-loading-overlay'
 import placeholder from '../img/placeholder.png'
 import { assureHttpsUrl } from '../helper/helperFunctions'
@@ -23,19 +23,16 @@ function Add () {
   async function startSearch() {
 	  const API_ENDPOINT = "https://api.tvmaze.com/search/shows?q="
 	  
-	  let q = input
-	  
-	  if (typeof(q) == "undefined"){
-		  console.log("undefined")
-		  return
-	  }
-	  const myJson = await fetch(API_ENDPOINT+q)
+	  if (typeof(input) == "undefined"){
+		  throw new Error("search query is undefined")
+    }
+    
+	  const result = await fetch(API_ENDPOINT+input)
 	    .then(function(response) {
 	      return response.json();
-	    });
+	    })
 	  
-	  setResults(myJson)
-	  console.log("search complete")
+	  setResults(result)
   }
   
   function postAPI (source, data) {
@@ -57,21 +54,13 @@ function Add () {
   
   async function addSeries(id) {
     setProcessing(true)
-
-	  console.log("add series with id: "+id+" to user "+user.sub)
 	  
 	  await postAPI('seriesCreate', {id: id, userId: user.sub})
       .then(response => {
         console.log("response from seriesCreate: " + response.msg)
       })
-      .catch(err => console.log('SeriesCreate API error: ', err))
+      .catch(err => {throw err})
 	  
-	  await getAPI('tvmazeUpdate', {sendEmail: false})
-      .then(response => {
-        console.log("response from tvmazeUpdate: " + response.msg)
-      })
-      .catch(err => console.log('tvmazeUpdate API error: ', err))
-    
     setProcessing(false)
   }
   

@@ -25,10 +25,15 @@ const schema = new mongoose.Schema({
     type: String,
     required: [true, 'status field is required'],
   },
+  lastAccessed: {
+    type: Date,
+    required: false,
+    default: new Date()
+  },
   lastUpdated: {
     type: Date,
     required: false,
-    default: Date.now
+    default: new Date
   },
 }),
 Series = mongoose.model('series', schema)

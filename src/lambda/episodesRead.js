@@ -2,6 +2,7 @@
 import mongoose from 'mongoose'
 import db from './server'
 import Episodes from './episodesModel'
+import Series from './seriesModel'
 
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
@@ -20,6 +21,8 @@ exports.handler = async (event, context) => {
       { $match: { seriesId: parseInt(seriesId) } },
       { $sort : { seasonNr : 1, episodeNr: 1 } },
     ]);
+
+    await Series.updateMany({ extId: seriesId }, { $set: { "lastAccessed" : new Date() } })
 	  
     const response = {
       msg: 'Episodes successfully found',

@@ -16,7 +16,8 @@ exports.handler = async (event, context) => {
 	  	    foreignField: 'seriesId',
 	  	    as: 'userseries'
 	      }
-      }
+      },
+      { $sort : { lastAccessed: -1 } }
 	  ]);
 	  
     const response = {

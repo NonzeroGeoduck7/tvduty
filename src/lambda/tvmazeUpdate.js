@@ -136,10 +136,10 @@ exports.handler = async (event, context) => {
             },
             {
                 $lookup: {
-                    from: 'user',
+                    from: 'users',
                     localField: 'userseries.userId',
                     foreignField: 'userId',
-                    as: 'user'
+                    as: 'users'
                 }
             },
         ])
@@ -151,186 +151,189 @@ exports.handler = async (event, context) => {
         log('API accessed.')
         
         var result = {}
-        if (seriesList.length > 0 && typeof response !== 'undefined') {
-            
-            var seriesToInsert = []
-            var seriesToDelete = []
-            var epsToInsert = []
-            var epsToDelete = []
-            for (const series of seriesList){
-                try {
-                    // change measurement to milliseconds for comparison
-                    const seriesResponseDate = response[series.extId]*1000
-    
-                    if(Date.parse(series.lastUpdated) < seriesResponseDate){
-                        // episodes need to be updated
-                        let seriesId = series.extId
-                        /*
-                        var oldEps = await Episodes.aggregate([
-                            { $match: { $and: [
-                                { seriesId: parseInt(seriesId) },
-                                { "airstamp": {"$gte":  new Date().toISOString()} }] }
-                            },
-                            { $sort : { seasonNr : 1, episodeNr: 1 } },
-                        ])
-                        */
-
-                        // find exact differences and save in some object
-
-                        epsToDelete.push(seriesId)
-    
-                        let info = await getInformationForSeries(seriesId)
-                        let newEps = info._embedded.episodes
-
-                        var eps = []
-                        newEps.forEach(function(ep){
-                            eps.push({
-                                "title":ep.name,
-                                "extId":ep.id,
-                                "seasonNr":ep.season,
-                                "episodeNr":ep.number,
-                                "seriesId":seriesId,
-                                "image":ep.image!=null?assureHttpsUrl(ep.image.original):null,
-                                "airstamp":ep.airstamp,
-                                "runtime":ep.runtime,
-                                "summary":ep.summary
-                            })
-                        })
-                        
-                        // CHANGES ON EPISODE LEVEL
-                        var email = []
-                        series.user.forEach(function(user) {
-                            email.push(user.email)
-                        })
-                        
-                        var description = 'changeInfo'
-                        var seriesTitle = series.title
-
-                        eps.forEach(function(ep, idx){
-                            //result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
-                        })
-                        
-                        // series object is changed and written back to db
-                        let obj = {
-                            "title": series.title,
-                            "extId": series.extId,
-                            "lastUpdated": new Date(),
-                            "status": info.status,
-                            "nrOfEpisodes": eps.length,
-                            "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
-                        }
-                        // check for changes in seriesObject
-                        
-
-                        seriesToDelete.push(series.extId)
-                        seriesToInsert.push(obj)
-    
-                        // save new eps to find out if episodes air today
-                        //oldEps = eps
-
-                        epsToInsert = epsToInsert.concat(eps)
-
-                    }
-                } catch(err){
-                    log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
-                }
-            }
-
-            // update episodes, critically if fails
-            try{
-                await Series.deleteMany({extId: { $in: seriesToDelete }})
-                await Series.insertMany(seriesToInsert)
-                await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
-                await Episodes.insertMany(epsToInsert)
-            } catch (err) {
-                log(">>>>>")
-                log("error while updating series or episodes: "+err)
-                log("<<<<<")
-            }
-
-            var timeEndUpdateSeries = timestamp()
-
+        if (seriesList.length === 0 || typeof response === 'undefined') {
+            return { statusCode: 200, body: 'database is empty or no results from tvmaze API. function finished' }
+        }
+        
+        var seriesToInsert = []
+        var seriesToDelete = []
+        var epsToInsert = []
+        var epsToDelete = []
+        for (const series of seriesList){
             try {
-                // iterate over all episodes
-                // if the episode aired yesterday, go over every user that is subscribed to this series
-                // go over every userSeries and only send email if episode.seasonNr equals current Season of this user
-                // also only send email if receiveNotification for this series is true
-                
-                var epsAiringToday = await Episodes.aggregate([
-                    { $match: {"airstamp": {
-                            $gt: new Date(yesterday).toISOString(),
-                            $lte: new Date(today).toISOString()
-                    } } },
-                    {
-                        $lookup: {
-                            from: 'series',
-                            localField: 'seriesId',
-                            foreignField: 'extId',
-                            as: 'series'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'userseries',
-                            localField: 'seriesId',
-                            foreignField: 'seriesId',
-                            as: 'userseries'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'user',
-                            localField: 'userseries.userId',
-                            foreignField: 'userId',
-                            as: 'user'
-                        }
-                    },
-                ])
+                // change measurement to milliseconds for comparison
+                const seriesResponseDate = response[series.extId]*1000
 
-                console.log("episodes airing today: "+epsAiringToday.length)
+                if(Date.parse(series.lastUpdated) < seriesResponseDate){
+                    // episodes need to be updated
+                    let seriesId = series.extId
+                    /*
+                    var oldEps = await Episodes.aggregate([
+                        { $match: { $and: [
+                            { seriesId: parseInt(seriesId) },
+                            { "airstamp": {"$gte":  new Date().toISOString()} }] }
+                        },
+                        { $sort : { seasonNr : 1, episodeNr: 1 } },
+                    ])
+                    */
 
-                // create notification if interested
-                epsAiringToday.forEach(function(ep){
-                    var email = []
-                    ep.user.forEach(function(user) {
-                        var isInterested = false
-                        ep.userseries.forEach(function(us){
-                            if (us.userId===user.userId && ep.series[0].extId===us.seriesId){
-                                isInterested =  us.receiveNotification
-                                                && us.currentSeason===ep.seasonNr
-                            }
+                    // find exact differences and save in some object
+
+                    epsToDelete.push(seriesId)
+
+                    let info = await getInformationForSeries(seriesId)
+                    let newEps = info._embedded.episodes
+
+                    var eps = []
+                    newEps.forEach(function(ep){
+                        eps.push({
+                            "title":ep.name,
+                            "extId":ep.id,
+                            "seasonNr":ep.season,
+                            "episodeNr":ep.number,
+                            "seriesId":seriesId,
+                            "image":ep.image!=null?assureHttpsUrl(ep.image.original):null,
+                            "airstamp":ep.airstamp,
+                            "runtime":ep.runtime,
+                            "summary":ep.summary
                         })
-                        if(isInterested){
-                            email.push({
-                                "email": user.email,
-                                "userId": user.userId
-                            })
-                        }
                     })
-                    var description = 'notiInfo'
-                    var update = {
-                        "seriesTitle": ep.series[0].title,
-                        "seriesId": ep.series[0].extId,
-                        "seasonNr": ep.seasonNr,
-                        "episodeNr": ep.episodeNr,
-                        "seasonEpisodeNotation": seasonEpisodeNotation(ep.seasonNr,ep.episodeNr),
-                        "episodeTitle": ep.title,
-                        "episodeImage": ep.image,
-                        "episodeSummary": ep.summary,
-                        "episodeAirstamp": ep.airstamp
+                    
+                    // CHANGES ON EPISODE LEVEL
+                    var email = []
+                    series.users.forEach(function(user) {
+                        email.push(user.email)
+                    })
+                    
+                    var description = 'changeInfo'
+                    var seriesTitle = series.title
+
+                    //eps.forEach(function(ep, idx){
+                    //    result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
+                    //})
+                    
+                    // series object is changed and written back to db
+                    let obj = {
+                        "title": series.title,
+                        "extId": series.extId,
+                        "lastUpdated": new Date(),
+                        "status": info.status,
+                        "nrOfEpisodes": eps.length,
+                        "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
                     }
+                    // check for changes in seriesObject
+                    
 
-                    result = addToMailBody(result, email, description, ep.series[0].title, update)
-                })
+                    seriesToDelete.push(series.extId)
+                    seriesToInsert.push(obj)
+
+                    // save new eps to find out if episodes air today
+                    //oldEps = eps
+
+                    epsToInsert = epsToInsert.concat(eps)
+
+                }
             } catch(err){
-                console.log('error while going through episodes airing today: '+err)
+                log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
             }
-
-            var timeEndCreateMailObject = timestamp()
         }
 
+        // update episodes, critically if fails
+        try{
+            await Series.deleteMany({extId: { $in: seriesToDelete }})
+            await Series.insertMany(seriesToInsert)
+            await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
+            await Episodes.insertMany(epsToInsert)
+        } catch (err) {
+            log(">>>>>")
+            log("error while updating series or episodes: "+err)
+            log("<<<<<")
+        }
+
+        var timeEndUpdateSeries = timestamp()
+
+        var seriesAirToday = new Set()
+        try {
+            // iterate over all episodes
+            // if the episode aired yesterday, go over every user that is subscribed to this series
+            // go over every userSeries and only send email if episode.seasonNr equals current Season of this user
+            // also only send email if receiveNotification for this series is true
+            
+            var epsAiringToday = await Episodes.aggregate([
+                { $match: {"airstamp": {
+                        $gt: new Date(yesterday).toISOString(),
+                        $lte: new Date(today).toISOString()
+                } } },
+                {
+                    $lookup: {
+                        from: 'series',
+                        localField: 'seriesId',
+                        foreignField: 'extId',
+                        as: 'series'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'userseries',
+                        localField: 'seriesId',
+                        foreignField: 'seriesId',
+                        as: 'userseries'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userseries.userId',
+                        foreignField: 'userId',
+                        as: 'users'
+                    }
+                },
+            ])
+
+            console.log("episodes airing today: "+epsAiringToday.length)
+
+            // create notification if interested
+            epsAiringToday.forEach(function(ep){
+                var email = []
+                ep.users.forEach(function(user) {
+                    var isInterested = false
+                    ep.userseries.forEach(function(us){
+                        if (us.userId===user.userId && ep.series[0].extId===us.seriesId){
+                            isInterested =  us.receiveNotification
+                                            && us.currentSeason===ep.seasonNr
+                        }
+                    })
+                    if(isInterested){
+                        email.push({
+                            "email": user.email,
+                            "userId": user.userId
+                        })
+                    }
+                })
+                var description = 'notiInfo'
+                seriesAirToday.add(ep.series[0].extId)
+                var update = {
+                    "seriesTitle": ep.series[0].title,
+                    "seriesId": ep.series[0].extId,
+                    "seasonNr": ep.seasonNr,
+                    "episodeNr": ep.episodeNr,
+                    "seasonEpisodeNotation": seasonEpisodeNotation(ep.seasonNr,ep.episodeNr),
+                    "episodeTitle": ep.title,
+                    "episodeImage": ep.image,
+                    "episodeSummary": ep.summary,
+                    "episodeAirstamp": ep.airstamp
+                }
+
+                result = addToMailBody(result, email, description, ep.series[0].title, update)
+            })
+        } catch(err){
+            console.log('error while going through episodes airing today: '+err)
+        }
+
+        var timeEndCreateMailObject = timestamp()
+
         // use result and send mail
-        if (event.queryStringParameters.sendEmail && process.env.NODE_ENV === 'production'){
+        if (process.env.NODE_ENV === 'production'){
             var timeStartRewriteObject = timestamp()
             var eventsToStore = []
             for (email in result){
@@ -387,6 +390,8 @@ exports.handler = async (event, context) => {
             await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
             await Event.insertMany(eventsToStore)
 
+            await Series.updateMany({ extId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
+
             var timeEndRewriteObject = timestamp()
 
             for (email in result){
@@ -397,10 +402,10 @@ exports.handler = async (event, context) => {
                     "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
                     "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
                 }
-                await sendEmail(email, result[email])
+                //await sendEmail(email, result[email])
             }
         }
-
+        
 		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
 	} catch (err) {
 		console.log('deploy-succeeded function end: ' + err)

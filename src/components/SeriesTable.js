@@ -10,6 +10,7 @@ import KeyboardEventHandler from 'react-keyboard-event-handler';
 
 import { useAuth0 } from '../react-auth0-wrapper'
 import { getWindowDimensions } from '../helper/helperFunctions'
+import { getIpInformation } from '../api/ipLookup'
 
 
 function SeriesTable(scrollPosition) {
@@ -36,12 +37,17 @@ function SeriesTable(scrollPosition) {
     let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
     let [seriesListLoading, setSeriesListLoading] = useState(false)
     let [searchString, setSearchString] = useState('')
+    let [ipInfo, setIpInfo] = useState({})
 
     const { user } = useAuth0()
     useEffect(() => {
         function handleResize() {
           setWindowDimensions(getWindowDimensions())
         }
+
+        getIpInformation().then((res)=>{
+            setIpInfo(res)
+        })
 
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
@@ -78,6 +84,10 @@ function SeriesTable(scrollPosition) {
         <div>
             <p>Screen size: {width} x {height}</p>
 
+            <div>{ipInfo?`Your IP is ${ipInfo.ip} and points to ${ipInfo.postal} ${ipInfo.city}, ${ipInfo.country}. Organization: ${ipInfo.org}`
+                        :'IP information not available'}
+            </div>
+            
             <Link to="/add">
                 <button>&#43;</button>
             </Link>

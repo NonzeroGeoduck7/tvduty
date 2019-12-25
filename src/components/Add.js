@@ -6,6 +6,7 @@ import { useAuth0 } from '../react-auth0-wrapper'
 import LoadingOverlay from 'react-loading-overlay'
 import placeholder from '../img/placeholder.png'
 import { assureHttpsUrl } from '../helper/helperFunctions'
+import SweetAlert from 'react-bootstrap-sweetalert'
 
 function Add () {
 	  
@@ -13,6 +14,7 @@ function Add () {
   let [processing, setProcessing] = useState(false)
   let [input, setInput] = useState('')
   let [results, setResults] = useState([])
+  let [showAddSeriesSuccessfulAlert, setShowAddSeriesSuccessfulAlert] = useState(false)
   
   function handleSearchInputChange(e) {
     const input = e.target.value
@@ -62,6 +64,7 @@ function Add () {
       .catch(err => {throw err})
 	  
     setProcessing(false)
+    setShowAddSeriesSuccessfulAlert(true)
   }
   
   function keyPressed(event) {
@@ -103,6 +106,16 @@ function Add () {
           <button>Go back</button>
         </Link>
       </div>
+      {showAddSeriesSuccessfulAlert&&
+        <SweetAlert
+          success
+          title="Success!"
+          onConfirm={()=>setShowAddSeriesSuccessfulAlert(false)}
+          timeout={3000}
+        >
+          Series successfully added to your list
+        </SweetAlert>
+      }
   </LoadingOverlay>
   )
 }

@@ -7,7 +7,7 @@ import posed from 'react-pose';
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
-function SeriesElement(props) {
+const SeriesElement = React.memo(function SeriesElement(props) {
 	
 	const Hoverable = posed.div({
 		hoverable: true,
@@ -44,7 +44,7 @@ function SeriesElement(props) {
 			</div>
 		</div>
   	)
-}
+})
 
 SeriesElement.propTypes = {
   title: PropTypes.string.isRequired,

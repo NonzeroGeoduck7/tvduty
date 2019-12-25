@@ -11,11 +11,13 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 import EpisodePlaceholder from '../img/placeholder.png'
 import { getWindowDimensions } from "../helper/helperFunctions"
 import * as Sentry from '@sentry/browser'
+import SweetAlert from 'react-bootstrap-sweetalert'
 
 function SeriesInfo ({ match }) {
   const { user } = useAuth0();
   let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
   let [lastWatchedEpisode, setLastWatchedEpisode] = useState()
+  let [showMarkAsWatchedAlert, setShowMarkAsWatchedAlert] = useState(false)
 
   useEffect(() => {
     function handleResize() {
@@ -98,12 +100,12 @@ function SeriesInfo ({ match }) {
   }
   
   async function markWatched(seriesId, seasonNr, episodeNr, index) {
-    console.log("mark episode " + seasonNr + "x" + episodeNr + " as watched for user " + user.sub)
     
     await postAPI('episodesMarkWatched', {seriesId: seriesId, seasonNr: seasonNr, episodeNr: episodeNr, userId: user.sub})
       .catch(err => console.log('episodeWatched API error: ', err))
 
     setLastWatchedEpisode(index)
+    setShowMarkAsWatchedAlert(true)
   }
 
   
@@ -187,6 +189,16 @@ function SeriesInfo ({ match }) {
           expandOnRowClicked
           expandableRowsComponent={<ExpandedComponent />}
         />
+      }
+      {showMarkAsWatchedAlert &&
+        <SweetAlert
+          success
+          title="Success!"
+          onConfirm={()=>setShowMarkAsWatchedAlert(false)}
+          timeout={3000}
+        >
+          Episode marked as watched
+        </SweetAlert>
       }
     </div>
   );

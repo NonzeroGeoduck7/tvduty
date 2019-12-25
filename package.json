@@ -15,6 +15,7 @@
     "node-fetch": "^2.6.0",
     "performance-now": "^2.1.0",
     "react": "^16.9.0",
+    "react-bootstrap-sweetalert": "^5.1.8",
     "react-data-table-component": "^3.9.0",
     "react-dom": "^16.9.0",
     "react-helmet": "^5.2.1",

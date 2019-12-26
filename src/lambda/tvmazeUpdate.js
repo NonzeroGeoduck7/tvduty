@@ -402,7 +402,7 @@ exports.handler = async (event, context) => {
                     "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
                     "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
                 }
-                //await sendEmail(email, result[email])
+                await sendEmail(email, result[email])
             }
         }
         

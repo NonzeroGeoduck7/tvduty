@@ -25,7 +25,7 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 	var watchPercentage = parseFloat(100*(props.lastWatchedEpisode+1)/props.nrOfEpisodes).toFixed(0)
 	var watchProgress = (props.lastWatchedEpisode+1) + '/' + props.nrOfEpisodes + ' (' +watchPercentage + '%)'
   	return (
-		<div>
+		<div style={{'textAlign': 'center'}}>
 			<Hoverable>
 				<Link to={"/series/"+props.extId}>
 					<LazyLoadImage

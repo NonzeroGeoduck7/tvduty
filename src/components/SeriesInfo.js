@@ -170,7 +170,6 @@ function SeriesInfo ({ match }) {
           <button>Go back</button>
         </Link>
       </div>
-        seriesId: {seriesId}<br/>
       <br/>
       <div style={{color: 'green'}}>green = Episode already watched</div>
       <div style={{color: 'red'}}>red = Episode not out yet</div>
@@ -195,7 +194,7 @@ function SeriesInfo ({ match }) {
           success
           title="Success!"
           onConfirm={()=>setShowMarkAsWatchedAlert(false)}
-          timeout={3000}
+          timeout={5000}
         >
           Episode marked as watched
         </SweetAlert>

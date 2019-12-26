@@ -111,7 +111,7 @@ function Add () {
           success
           title="Success!"
           onConfirm={()=>setShowAddSeriesSuccessfulAlert(false)}
-          timeout={3000}
+          timeout={5000}
         >
           Series successfully added to your list
         </SweetAlert>

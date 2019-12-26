@@ -1,14 +1,25 @@
 import PropTypes from 'prop-types'
-import React from 'react'
-import { Link } from "react-router-dom"
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import placeholder from '../img/placeholder.png';
-import posed from 'react-pose';
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { LazyLoadImage } from 'react-lazy-load-image-component'
+import placeholder from '../img/placeholder.png'
+import posed from 'react-pose'
+import styled from 'styled-components'
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
+const ProgressDiv = styled.div`
+	background: green;
+	display: inline-block;
+	vertical-align: bottom;
+	width: 4px;
+	height: ${props => props.height};
+`
+
 const SeriesElement = React.memo(function SeriesElement(props) {
 	
+	let [showProgressBar, setShowProgressBar] = useState(false)
+
 	const Hoverable = posed.div({
 		hoverable: true,
 		init: {
@@ -27,8 +38,10 @@ const SeriesElement = React.memo(function SeriesElement(props) {
   	return (
 		<div style={{'textAlign': 'center'}}>
 			<Hoverable>
+				{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
 				<Link to={"/series/"+props.extId}>
 					<LazyLoadImage
+						afterLoad={()=>{setShowProgressBar(true)}}
 						scrollPosition={props.scrollPosition}
 						height={props.width*4/3} width={props.width}
 						placeholderSrc={placeholder}
@@ -36,6 +49,7 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 						src={props.poster}
 					/>
 	  			</Link>
+				  {showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
 			</Hoverable>
 			<div>
 				<label>

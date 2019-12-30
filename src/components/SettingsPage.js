@@ -50,7 +50,7 @@ function validateEmail(mail)
 }
 
 function SettingsPage () {
-	  
+    
   const { user } = useAuth0();
   let [loading, setLoading] = useState(false)
   let [settings, setSettings] = useState({})

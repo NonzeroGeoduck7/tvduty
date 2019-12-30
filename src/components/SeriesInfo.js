@@ -13,6 +13,8 @@ import { getWindowDimensions } from "../helper/helperFunctions"
 import * as Sentry from '@sentry/browser'
 import SweetAlert from 'react-bootstrap-sweetalert'
 
+const axios = require('axios')
+
 function SeriesInfo ({ match }) {
   const { user } = useAuth0();
   let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
@@ -114,52 +116,39 @@ function SeriesInfo ({ match }) {
   
   const { params: { extId:seriesId } } = match
   
+  function getUserSeries() {
+    return axios.post('/.netlify/functions/userSeriesRead', {
+      seriesId: seriesId,
+      userId: user.sub
+    })
+  }
+
+  function getEpisodes() {
+    return axios.post('/.netlify/functions/episodesRead', {
+      seriesId: seriesId
+    })
+  }
+
   useEffect(() => {
-    postAPI('userSeriesRead',{seriesId: seriesId, userId:user.sub})
-      .then(response => {
-        if (response.data.length !== 1){
-          Sentry.captureException("userSeries found <> 1 result for seriesId "+seriesId+" and user "+user.sub+": "+response.data)
+    setEpisodeListLoading(true)
+    axios.all([getUserSeries(), getEpisodes()])
+      .then(axios.spread(function (userSeriesRes, episodesRes) {
+        if (userSeriesRes.data.data.length !== 1){
+          Sentry.captureException("userSeries found <> 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data.data)
         } else {
-          setLastWatchedEpisode(response.data[0].lastWatchedEpisode)
+          var lastWatchedEp = userSeriesRes.data.data[0].lastWatchedEpisode
+          setEpisodesList(episodesRes.data.data.map(function(entry, idx){
+            entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
+            entry.index=idx
+            entry.watched=idx <= lastWatchedEp
+            return entry
+          }))
+          setEpisodeListLoading(false)
         }
-      })
-      .catch(err => console.log('Error retrieving userSeries: ', err))
-
-  }, [seriesId, user.sub])
-
-  useEffect(() => {
-    if (lastWatchedEpisode==null){
-      console.log("lastWatchedEpisode not yet available, skipping")
-      return
-    }
-
-    console.log("useEffect method completed, showsInfo updated.")
-  
-    // Fetch the Episodes from the database
-    setEpisodeListLoading(true);
-
-    if (episodesList.length === 0){
-      postAPI('episodesRead', {seriesId:seriesId})
-      .then(response => {
-        setEpisodesList(response.data.map(function(entry, idx){
-          entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
-          entry.index=idx
-          entry.watched=idx <= lastWatchedEpisode
-          return entry
-        }))
-        setEpisodeListLoading(false)
-      })
-      .catch(err => console.log('Error retrieving episodes: ', err))
-    } else {
-      // episodesList is already loaded, just update lastWatchedEpisode
-      setEpisodesList(episodesList.map(function(entry, idx){
-        entry.watched=idx <= lastWatchedEpisode
-        return entry
       }))
-      setEpisodeListLoading(false)
-    }
-	  
-  }, [seriesId, lastWatchedEpisode]);
+      .catch(err=>console.log(err))
+    
+  }, [seriesId, user.sub, lastWatchedEpisode])
 
   return (
     <div>
@@ -192,7 +181,7 @@ function SeriesInfo ({ match }) {
           success
           title="Success!"
           onConfirm={()=>setShowMarkAsWatchedAlert(false)}
-          timeout={5000}
+          timeout={3000}
         >
           Episode marked as watched
         </SweetAlert>

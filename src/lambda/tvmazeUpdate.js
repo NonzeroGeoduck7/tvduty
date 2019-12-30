@@ -1,7 +1,6 @@
 import fetch from 'node-fetch'
 import mongoose from 'mongoose'
 import db from '../lambda/server'
-import * as Sentry from '@sentry/browser'
 import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 import Event from '../lambda/eventModel'

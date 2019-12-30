@@ -1,28 +1,37 @@
-// productDelete.js
+// seriesDelete.js
 import mongoose from 'mongoose'
-// Load the server
 import db from './server'
-// Load the Product Model
 import Series from './seriesModel'
+import Episodes from './episodesModel'
+import UserSeries from './userSeriesModel'
+
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   try {
-    // Parse the ID
-    const id = JSON.parse(event.body),
-          response = {
-            msg: "Product successfully deleted"
-          }
+    const data = JSON.parse(event.body)
+    const seriesId = parseInt(data.seriesId)
+    const userId = data.userId
     
-    // Use Product.Model to delete 
-    await Series.findOneAndDelete({ _id: id })
+    const count = await UserSeries.countDocuments({seriesId: seriesId})
+
+    if (count === 1){
+      // show is not connected to other users, delete completely
+      await Series.deleteMany({extId: seriesId})
+      await Episodes.deleteMany({seriesId: seriesId})
+    }
+    await UserSeries.deleteMany({seriesId: seriesId, userId: userId})
+
+    const response = {
+      msg: "Series successfully deleted"
+    }
     
     return {
       statusCode: 201,
       body: JSON.stringify(response)
     }
   } catch(err) {
-    console.log('series.delete', err) // output to netlify function log
+    console.log('Error while deleting series: ', err)
     return {
       statusCode: 500,
       body: JSON.stringify({msg: err.message})

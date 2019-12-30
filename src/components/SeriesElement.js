@@ -5,6 +5,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 import placeholder from '../img/placeholder.png'
 import posed from 'react-pose'
 import styled from 'styled-components'
+import DeleteOverlayImage from '../img/delete.png'
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
@@ -39,6 +40,8 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 		<div style={{'textAlign': 'center'}}>
 			<Hoverable>
 				{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
+				
+				{props.isDeleteMode && <img onClick={props.deleteFunction} src={DeleteOverlayImage} alt={props.title+" delete"} style={{"width":props.width*4/5,"position":"absolute","zIndex":1}} />}
 				<Link to={"/series/"+props.extId}>
 					<LazyLoadImage
 						afterLoad={()=>{setShowProgressBar(true)}}
@@ -49,7 +52,7 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 						src={props.poster}
 					/>
 	  			</Link>
-				  {showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
+				{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
 			</Hoverable>
 			<div>
 				<label>

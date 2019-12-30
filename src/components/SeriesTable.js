@@ -8,6 +8,7 @@ import { trackWindowScroll } from 'react-lazy-load-image-component'
 import * as Sentry from '@sentry/browser'
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import styled from 'styled-components'
+import SweetAlert from 'react-bootstrap-sweetalert'
 
 import { useAuth0 } from '../react-auth0-wrapper'
 import { getWindowDimensions } from '../helper/helperFunctions'
@@ -70,6 +71,18 @@ const IpInfoDiv = styled.div`
     color: light-blue;
 `
 
+async function handleSeriesDelete(seriesId, userId) {
+    const data = {
+        seriesId: seriesId,
+        userId: userId
+    }
+
+    await fetch('/.netlify/functions/seriesDelete', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    })
+}
+
 function SeriesTable(scrollPosition) {
 
     function handleKeyPress(key){
@@ -88,6 +101,11 @@ function SeriesTable(scrollPosition) {
                 break
         }
     }
+
+    let [deleteMode, setDeleteMode] = useState(false)
+    let [showIdToDelete, setShowIdToDelete] = useState(0)
+    let [showDeletedAlert, setShowDeletedAlert] = useState(false)
+    let [showDeleteSuccess, setShowDeleteSuccess] = useState(false)
 
     let [seriesList, setSeriesList] = useState([])
     let [originalSeriesList, setOriginalSeriesList] = useState([])
@@ -157,7 +175,7 @@ function SeriesTable(scrollPosition) {
                         }
                     </SearchStringDiv>
                     <DeleteButtonDiv>
-                        <DeleteButton>delete shows</DeleteButton>
+                        <DeleteButton onClick={()=>setDeleteMode(!deleteMode)}>delete shows</DeleteButton>
                     </DeleteButtonDiv>
                     <StackGrid columnWidth={columnWidth}>
                         {seriesList.map(c => {
@@ -169,6 +187,8 @@ function SeriesTable(scrollPosition) {
                                 Sentry.captureMessage("Error, more than one user - series pair for series '"+c.title+"' with id "+c.extId)
                             }
                             return <SeriesElement
+                                isDeleteMode={deleteMode}
+                                deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
                                 scrollPosition={scrollPosition}
                                 key={c.extId}
                                 width={columnWidth/1.25}
@@ -181,12 +201,29 @@ function SeriesTable(scrollPosition) {
                     </StackGrid>
                 </StyledDiv>
             }
+            {showDeletedAlert &&
+                <SweetAlert
+                    warning
+                    showCancel
+                    confirmBtnText="Yes, delete it!"
+                    confirmBtnBsStyle="danger"
+                    title="Are you sure?"
+                    onConfirm={async()=>await handleSeriesDelete(showIdToDelete, user.sub).then(()=>{setShowDeleteSuccess(true);setShowDeletedAlert(false)})}
+                    onCancel={()=>setShowDeletedAlert(false)}
+                    focusCancelBtn
+                >
+                    Delete show {showIdToDelete} from your account?
+                </SweetAlert>
+            }
+            {showDeleteSuccess && 
+                <SweetAlert success title="Success!" onConfirm={()=>setShowDeleteSuccess(false)} onCancel={()=>setShowDeleteSuccess(false)}>
+                    Series successfully deleted, reload page to see the effect!
+                </SweetAlert>}
             <KeyboardEventHandler
                 handleKeys={['alphanumeric', 'space', 'backspace', 'esc']}
                 isExclusive={true}
                 onKeyEvent={(key, e) => handleKeyPress(key)} />
         </WrapperDiv>
-        
     )
 }
 

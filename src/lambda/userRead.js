@@ -10,7 +10,13 @@ exports.handler = async (event, context) => {
 
     const data = JSON.parse(event.body)
 
-    const result = await User.find({userId: data.userId})
+    var result = await User.find({userId: data.userId})
+
+    if (result.length === 0){
+      // if not present create user
+      await User.create({_id: mongoose.Types.ObjectId(), userId: data.userId})
+      result = [{_id: mongoose.Types.ObjectId(), userId: data.userId}]
+    }
     
     const response = {
       msg: 'User successfully found',

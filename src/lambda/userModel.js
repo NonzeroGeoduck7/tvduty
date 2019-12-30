@@ -10,7 +10,7 @@ const schema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'email field is required']
+    required: [false, 'email field is required']
   },
 })
 

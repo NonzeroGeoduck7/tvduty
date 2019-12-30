@@ -1,7 +1,10 @@
 // src/components/SettingsPage.js
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth0 } from "../react-auth0-wrapper"
 import * as Sentry from '@sentry/browser'
+import SweetAlert from 'react-bootstrap-sweetalert'
+import Loading from './Loading'
 
 import styled from 'styled-components'
 
@@ -31,11 +34,20 @@ const Button = styled.button.attrs({
     margin: 15px 15px 15px 5px;
 `
 
-const CancelButton = styled.a.attrs({
+const CancelButton = styled.button.attrs({
     className: `btn btn-danger`,
 })`
     margin: 15px 15px 15px 5px;
 `
+
+function validateEmail(mail) 
+{
+    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail)){
+        return true
+    } else {
+        return false
+    }
+}
 
 function SettingsPage () {
 	  
@@ -43,13 +55,35 @@ function SettingsPage () {
   let [loading, setLoading] = useState(false)
   let [settings, setSettings] = useState({})
   let [email, setEmail] = useState('')
+  let [showSaveSettingsAlert, setShowSaveSettingsAlert] = useState(false)
+  let [showInvalidEmailAlert, setShowInvalidEmailAlert] = useState(false)
   
-  const handleEmailChange = (event) => {
-    setEmail(event.target.value)
+  const handleSaveSettings = async () => {
+    
+    if(validateEmail(email)) {
+        await fetch('/.netlify/functions/userUpdate', {
+            method: 'POST',
+            body: JSON.stringify({userId: user.sub, email: email})})
+        .then(()=>{
+            settings.email = email
+            setSettings(settings)
+            setShowSaveSettingsAlert(true)
+        })
+        .catch(err => console.log('Error updating userSeries: ', err))
+    } else {
+        setShowInvalidEmailAlert(true)
+        return
+    }
   }
 
-  const handleSaveSettings = (event) => {
-    // pass
+  function keyPressed(event) {
+      if (event.key === "Enter") {
+          handleSaveSettings()
+      }
+  }
+
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value)
   }
 
   useEffect(() => {
@@ -64,15 +98,14 @@ function SettingsPage () {
         }
         setSettings(response.data[0])
     })
+    .then(()=>{setLoading(false)})
     .catch(err => console.log('Error retrieving userSeries: ', err))
-    .finally(setLoading(false))
 
   }, [user.sub])
 
-  return (
-    <Wrapper>
-        {loading?
-        <p>loading</p>:<div>
+  return ( loading ?
+        <Loading />:
+        <Wrapper>
             <Title>Settings</Title>
 
             <Label>enter new email (currently is {settings.email}):</Label>
@@ -80,13 +113,31 @@ function SettingsPage () {
                 type="email"
                 value={email}
                 onChange={handleEmailChange}
+                onKeyPress={keyPressed}
             />
 
-            <Button onClick={handleSaveSettings}>Save</Button>
-            <CancelButton>Cancel</CancelButton>
-        </div>
-        }
-    </Wrapper>
+            <Button onClick={()=>handleSaveSettings()}>Save</Button>
+            <Link to="/"><CancelButton>Go back</CancelButton></Link>
+            {showSaveSettingsAlert&&
+                <SweetAlert
+                    success
+                    title="Success!"
+                    onConfirm={()=>setShowSaveSettingsAlert(false)}
+                    timeout={3000}
+                >
+                    Settings saved.
+                </SweetAlert>
+            }
+            {showInvalidEmailAlert&&
+                <SweetAlert
+                    danger
+                    title="Error!"
+                    onConfirm={()=>setShowInvalidEmailAlert(false)}
+                >
+                    Please enter a valid email address.
+                </SweetAlert>
+            }
+        </Wrapper>
   )
 }
 

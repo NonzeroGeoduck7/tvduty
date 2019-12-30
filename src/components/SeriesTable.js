@@ -132,7 +132,7 @@ function SeriesTable(scrollPosition) {
         setSeriesList(originalSeriesList.filter(s=>s.title.toLowerCase().includes(searchString)))
     }, [searchString])
 
-    const { width, height } = windowDimensions
+    const { width } = windowDimensions
 
     // at least 2 items next to each other, and at max 10 items next to each other, minus some pixels for the vertical scrollbar, if any.
     const columnWidth = Math.min((width-40)/2, Math.max(330, (width-40)/10))

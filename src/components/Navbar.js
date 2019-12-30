@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom'
 import Logo from '../img/logo.png';
 
 const Wrapper = styled.div`
-    border-bottom: 2px solid black;
+    background: #f5f7f9;
+    border-bottom: 1px solid #d8d8d8;
     margin-bottom: 10px;
     padding: 10px;
 `
@@ -63,6 +64,17 @@ const LogoutButton = styled.button`
     border-radius: 3px;
 `
 
+const SettingsButton = styled.button`
+    background: white;
+    color: black;
+    font-size: 1em;
+    padding: 0.5em 1em;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    border: 2px solid orange;
+    border-radius: 3px;
+`
+
 const NavBar = () => {
   const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0()
 
@@ -71,14 +83,21 @@ const NavBar = () => {
 	  
       <LogoDiv>
         <Link to="/">
-          <img src={Logo} style={{"width":"33%","height":"96px", "width":"96px"}}></img>
+          <img src={Logo} alt={"logo.png"} style={{"height":"96px", "width":"96px"}}></img>
         </Link>
       </LogoDiv>
 	    {user && <UsernameDiv>{user.name}</UsernameDiv>}
       
       {isAuthenticated ? 
         <LogoutButtonDiv>
-          <LogoutButton onClick={() => logout()}>Log out</LogoutButton>
+          <Link to="/settings">
+            <SettingsButton>
+              &#9881;
+            </SettingsButton>
+          </Link>
+          <LogoutButton onClick={() => logout()}>
+            Log out
+          </LogoutButton>
         </LogoutButtonDiv>
       :
         <LoginButtonDiv>

@@ -2,12 +2,12 @@
 import mongoose from 'mongoose'
 import db from './server'
 import Episodes from './episodesModel'
-import Series from './seriesModel'
 
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
-  const seriesId = event.queryStringParameters.seriesId
+  const { seriesId } = JSON.parse(event.body)
+
   if (typeof(seriesId) === "undefined"){
 	  return {
         statusCode: 500,
@@ -18,12 +18,10 @@ exports.handler = async (event, context) => {
   try {
     // Use Episodes.Model to find all series matching the user
     const episodes = await Episodes.aggregate([
-      { $match: { seriesId: parseInt(seriesId) } },
+      { $match: { seriesId: parseInt(seriesId) } }, //parse to int necessary for some reason
       { $sort : { seasonNr : 1, episodeNr: 1 } },
-    ]);
+    ])
 
-    await Series.updateMany({ extId: seriesId }, { $set: { "lastAccessed" : new Date() } })
-	  
     const response = {
       msg: 'Episodes successfully found',
       data: episodes

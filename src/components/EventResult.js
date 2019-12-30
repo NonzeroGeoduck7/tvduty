@@ -23,16 +23,14 @@ function EventResult ({ match }) {
   }
 
   useEffect(() => {
-    console.log("start useEffect")
-
     setLoading(true)
 
     postAPI('processEvent', {eventType: eventType, eventUid: eventUid})
-      .then(()=> setLoading(false))
       .catch(err => {
         console.log('process event error: ', err)
         Sentry.captureException('process event error: ', err)
       })
+      .finally(()=> setLoading(false))
   }, [eventType, eventUid])
 
   return (

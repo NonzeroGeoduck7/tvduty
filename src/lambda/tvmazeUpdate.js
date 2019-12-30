@@ -6,8 +6,11 @@ import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 import Event from '../lambda/eventModel'
 
+
 import { sendEmail } from '../helper/emailNotification.js'
 import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
+import { initSentry, catchErrors, reportError } from '../sentryWrapper'
+initSentry();
 
 const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
@@ -112,7 +115,7 @@ function generateSeriesUrl(seriesId) {
     return process.env.URL+'/series/'+seriesId
 }
 
-exports.handler = async (event, context) => {
+exports.handler = catchErrors(async (event, context) => {
 	context.callbackWaitsForEmptyEventLoop = false
     
     var today = new Date()
@@ -235,6 +238,7 @@ exports.handler = async (event, context) => {
                 }
             } catch(err){
                 log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
+                await reportError(err)
             }
         }
 
@@ -248,6 +252,7 @@ exports.handler = async (event, context) => {
             log(">>>>>")
             log("error while updating series or episodes: "+err)
             log("<<<<<")
+            await reportError(err)
         }
 
         var timeEndUpdateSeries = timestamp()
@@ -300,7 +305,7 @@ exports.handler = async (event, context) => {
                     ep.userseries.forEach(function(us){
                         if (us.userId===user.userId && ep.series[0].extId===us.seriesId){
                             isInterested =  us.receiveNotification
-                                            && us.currentSeason===ep.seasonNr
+                                            || ep.episodeNr == 1
                         }
                     })
                     if(isInterested){
@@ -328,6 +333,7 @@ exports.handler = async (event, context) => {
             })
         } catch(err){
             console.log('error while going through episodes airing today: '+err)
+            await reportError(err)
         }
 
         var timeEndCreateMailObject = timestamp()
@@ -406,9 +412,10 @@ exports.handler = async (event, context) => {
             }
         }
         
-		return { statusCode: 200, body: 'deploy-succeeded function finished.' }
+		return { statusCode: 200, body: 'tvmazeUpdate function successfully finished.' }
 	} catch (err) {
-		console.log('deploy-succeeded function end: ' + err)
+        console.log('tvmazeUpdate function finished with error: ' + err)
+        await reportError(err)
 		return { statusCode: 500, body: String(err) }
 	}
-}
+});

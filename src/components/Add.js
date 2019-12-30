@@ -7,11 +7,13 @@ import LoadingOverlay from 'react-loading-overlay'
 import placeholder from '../img/placeholder.png'
 import { assureHttpsUrl } from '../helper/helperFunctions'
 import SweetAlert from 'react-bootstrap-sweetalert'
+import Loading from './Loading'
 
 function Add () {
 	  
   const { user } = useAuth0();
-  let [processing, setProcessing] = useState(false)
+  let [loading, setLoading] = useState(false) // is loading results from API
+  let [processing, setProcessing] = useState(false) // is inserting into database
   let [input, setInput] = useState('')
   let [results, setResults] = useState([])
   let [showAddSeriesSuccessfulAlert, setShowAddSeriesSuccessfulAlert] = useState(false)
@@ -29,29 +31,27 @@ function Add () {
 		  throw new Error("search query is undefined")
     }
     
+    setLoading(true)
+
 	  const result = await fetch(API_ENDPOINT+input)
 	    .then(function(response) {
 	      return response.json();
-	    })
-	  
-	  setResults(result)
+      })
+      .catch(err=>{
+        console.log("encountered error while reading from api: "+err)
+      })
+    
+      setResults(result)
+      setLoading(false)
   }
   
   function postAPI (source, data) {
      return fetch('/.netlify/functions/' + source, {
-         method: 'POST',
+         method: 'PUT',
          body: JSON.stringify(data)
        })
        .then(res => res.json())
        .catch(err => err)
-  }
-
-  function getAPI (source) {
-    return fetch('/.netlify/functions/' + source, {
-      method: 'GET',
-    })
-    .then(res => res.json())
-    .catch(err => err)
   }
   
   async function addSeries(id) {
@@ -73,7 +73,7 @@ function Add () {
     }
   }
 
-  return (
+  return ( loading ? <Loading />:
   <LoadingOverlay
     active={processing}
     spinner
@@ -87,10 +87,16 @@ function Add () {
       />
       <button onClick={startSearch}>search</button>
       </div>
+      <div>
+        <Link to="/">
+          <button>Go back</button>
+        </Link>
+      </div>
       {results.map(c =>
-        <div>
+        <div key={c.show.id}>
           <img
             width={200}
+            alt={c.show.name+" poster"}
             src={c.show.image!=null?assureHttpsUrl(c.show.image.medium):placeholder}
           />
           <label>
@@ -101,11 +107,6 @@ function Add () {
           </button>
         </div>
       ) }
-      <div>
-        <Link to="/">
-          <button>Go back</button>
-        </Link>
-      </div>
       {showAddSeriesSuccessfulAlert&&
         <SweetAlert
           success

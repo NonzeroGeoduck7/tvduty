@@ -77,7 +77,7 @@ async function processEventEpisodeWatched(eventUid) {
   }
 }
 
-function processEventNotificationSettings(eventUid){
+async function processEventNotificationSettings(eventUid){
   return {
     statusCode: 405,
     body: JSON.stringify({msg: "Method Not Allowed"})

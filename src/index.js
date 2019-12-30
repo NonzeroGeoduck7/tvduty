@@ -7,7 +7,7 @@ import * as serviceWorker from "./serviceWorker"
 import { Auth0Provider } from "./react-auth0-wrapper"
 import config from "./auth_config.json"
 import ErrorBoundary from "./ErrorBoundary"
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/browser'
 
 // A function that routes the user to the right place
 // after login
@@ -21,9 +21,10 @@ const onRedirectCallback = appState => {
   );
 };
 
-if (process.env.NODE_ENV === 'production') {
-  Sentry.init({dsn: "https://7138f7d690cd4cac92243def8fa03a08@sentry.io/1792135"})
-}
+const { SENTRY_DSN } = process.env;
+Sentry.init({ dsn: SENTRY_DSN });
+
+//Sentry.init({dsn: "https://7138f7d690cd4cac92243def8fa03a08@sentry.io/1792135"})
 
 ReactDOM.render(
   <ErrorBoundary>

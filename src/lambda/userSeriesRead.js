@@ -7,8 +7,8 @@ exports.handler = async (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   try {
-    const seriesId = event.queryStringParameters.seriesId,
-          userId = event.queryStringParameters.userId
+
+    const {seriesId, userId} = JSON.parse(event.body)
           
     // query
     var result = await UserSeries.find({seriesId: seriesId, userId: userId})

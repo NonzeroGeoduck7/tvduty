@@ -92,7 +92,7 @@ function SeriesInfo ({ match }) {
 
   async function postAPI (source, data) {
     return fetch('/.netlify/functions/' + source, {
-        method: 'post',
+        method: 'POST',
         body: JSON.stringify(data)
       })
       .then(res => res.json())
@@ -115,8 +115,7 @@ function SeriesInfo ({ match }) {
   const { params: { extId:seriesId } } = match
   
   useEffect(() => {
-    fetch('/.netlify/functions/userSeriesRead?seriesId='+seriesId+'&userId='+user.sub)
-      .then(res => res.json())
+    postAPI('userSeriesRead',{seriesId: seriesId, userId:user.sub})
       .then(response => {
         if (response.data.length !== 1){
           Sentry.captureException("userSeries found <> 1 result for seriesId "+seriesId+" and user "+user.sub+": "+response.data)
@@ -140,8 +139,7 @@ function SeriesInfo ({ match }) {
     setEpisodeListLoading(true);
 
     if (episodesList.length === 0){
-      fetch('/.netlify/functions/episodesRead?seriesId='+seriesId)
-      .then(res => res.json())
+      postAPI('episodesRead', {seriesId:seriesId})
       .then(response => {
         setEpisodesList(response.data.map(function(entry, idx){
           entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)

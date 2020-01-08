@@ -32,13 +32,12 @@ const DeleteButtonDiv = styled.div`
     text-align: right;
     display: inline-block;
     width: 50%;
-    marginTop: -20;
 `
 
 const DeleteButton = styled.button`
     position: relative;
-    top: -20px;
-    right: -20px;
+    top: -5px;
+    right: -5px;
     background: white;
     color: palevioletred;
     font-size: 0.7em;
@@ -55,12 +54,12 @@ const SearchStringDiv = styled.div`
 
 const SearchString = styled.p`
     position: relative;
-    top: -20px;
+    top: -5px;
 `
 
 const StyledDiv = styled.div`
     margin: 20px 20px 20px 20px;
-    padding: 30px;
+    padding: 10px;
     border: 2px solid palevioletred;
     border-radius: 3px;
 `
@@ -116,6 +115,7 @@ function SeriesTable(scrollPosition) {
 
     const { user } = useAuth0()
     useEffect(() => {
+        console.log("useEffect resize")
         function handleResize() {
           setWindowDimensions(getWindowDimensions())
         }
@@ -135,15 +135,21 @@ function SeriesTable(scrollPosition) {
         setSeriesListLoading(true)
 
         // Fetch the Series from the database
-        fetch('/.netlify/functions/seriesRead')
+        const data = {
+            userId: user.sub
+        }
+
+        fetch('/.netlify/functions/seriesRead', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
         .then(res => res.json())
         .then(response => {
-          let filtered = response.data.filter(e=>e.userseries.filter(e1=>e1.userId===user.sub).length > 0)
-          setSeriesList(filtered)
-          setOriginalSeriesList(filtered)
+          setSeriesList(response.data)
+          setOriginalSeriesList(response.data)
           setSeriesListLoading(false)
         })
-        .catch(err => console.log('Error retrieving products: ', err))
+        .catch(err => console.log('Error retrieving series: ', err))
     }, [user.sub])
 
     useEffect(() => {
@@ -153,7 +159,7 @@ function SeriesTable(scrollPosition) {
     const { width } = windowDimensions
 
     // at least 2 items next to each other, and at max 10 items next to each other, minus some pixels for the vertical scrollbar, if any.
-    const columnWidth = Math.min((width-40)/2, Math.max(330, (width-40)/10))
+    const columnWidth = Math.min((width-100)/2, Math.max(330, (width-100)/10))
 
     return (
         <WrapperDiv>
@@ -179,13 +185,7 @@ function SeriesTable(scrollPosition) {
                     </DeleteButtonDiv>
                     <StackGrid columnWidth={columnWidth}>
                         {seriesList.map(c => {
-                            var lastWatchedEpisode = -1
-                            const userSeriesEntry = c.userseries.filter(entry=>entry.userId===user.sub)
-                            if (userSeriesEntry.length === 1){
-                                lastWatchedEpisode = userSeriesEntry[0].lastWatchedEpisode
-                            } else {
-                                Sentry.captureMessage("Error, more than one user - series pair for series '"+c.title+"' with id "+c.extId)
-                            }
+                            var lastWatchedEpisode = c.userseries.lastWatchedEpisode
                             return <SeriesElement
                                 isDeleteMode={deleteMode}
                                 deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
@@ -193,7 +193,7 @@ function SeriesTable(scrollPosition) {
                                 key={c.extId}
                                 width={columnWidth/1.25}
                                 lastWatchedEpisode={lastWatchedEpisode}
-                                nrOfEpisodes={c.nrOfEpisodes}
+                                nrOfEpisodes={c.nrOfAiredEpisodes}
                                 title={c.title}
                                 poster={c.poster}
                                 extId={c.extId} />

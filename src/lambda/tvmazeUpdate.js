@@ -179,8 +179,6 @@ exports.handler = catchErrors(async (event, context) => {
                     ])
                     */
 
-                    // find exact differences and save in some object
-
                     epsToDelete.push(seriesId)
 
                     let info = await getInformationForSeries(seriesId)
@@ -215,25 +213,19 @@ exports.handler = catchErrors(async (event, context) => {
                     //})
                     
                     // series object is changed and written back to db
+                    const nrOfAiredEpisodes = eps.filter(e=>new Date(e.airstamp)<today).length
                     let obj = {
                         "title": series.title,
                         "extId": series.extId,
                         "lastUpdated": new Date(),
                         "status": info.status,
-                        "nrOfEpisodes": eps.length,
+                        "nrOfAiredEpisodes": nrOfAiredEpisodes,
                         "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
                     }
-                    // check for changes in seriesObject
-                    
-
                     seriesToDelete.push(series.extId)
                     seriesToInsert.push(obj)
 
-                    // save new eps to find out if episodes air today
-                    //oldEps = eps
-
                     epsToInsert = epsToInsert.concat(eps)
-
                 }
             } catch(err){
                 log('error while updating series '+series.title+' with id: ' + series.extId + ' - ' + err)
@@ -247,6 +239,7 @@ exports.handler = catchErrors(async (event, context) => {
             await Series.insertMany(seriesToInsert)
             await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
             await Episodes.insertMany(epsToInsert)
+
         } catch (err) {
             log(">>>>>")
             log("error while updating series or episodes: "+err)
@@ -338,80 +331,81 @@ exports.handler = catchErrors(async (event, context) => {
         var timeEndCreateMailObject = timestamp()
 
         // use result and send mail
-        if (process.env.NODE_ENV === 'production'){
-            var timeStartRewriteObject = timestamp()
-            var eventsToStore = []
-            for (email in result){
-                
-                result[email].timespan = {
-                    "start": yesterday.toUTCString(),
-                    "end": today.toUTCString()
-                }
-                const {userId, notiInfo, changeInfo} = result[email]
-
-                result[email]["newEpisodes"] = []
-                for (const seriesTitle in notiInfo){
-                    var eps = []
-                    notiInfo[seriesTitle].forEach(e => {
-
-                        const episodeWatchedUid = uid.sync(18)
-                        eventsToStore.push({
-                            "eventUid": episodeWatchedUid,
-                            "userId": userId,
-                            "seriesId": e.seriesId,
-                            "seasonNr":  e.seasonNr,
-                            "episodeNr": e.episodeNr,
-                            "dateEventCreated": new Date().toISOString()
-                        })
-
-                        e.episodeWatchedUrl = generateEventEpisodeWatchedUrl(episodeWatchedUid)
-                        eps.push(e)
-                    })
-                    
-                    result[email]["newEpisodes"].push({
-                        "seriesTitle": seriesTitle,
-                        "showOnWebsiteUrl": generateSeriesUrl(eps[0].seriesId),
-                        "turnOffNotificationsUrl": generateEventNotificationUrl(uid.sync(18)),
-                        "episodes": eps
-                    })
-                    result[email]["notiInfo"]["seriesTitle"] = null
-                }
-                
-                /*
-                if (!isEmpty(changeInfo)){
-                    html += changeIntro
-                    for (const seriesTitle in changeInfo) {
-                        html += '<b>'+seriesTitle+'</b>:<br>'
-                        changeInfo[seriesTitle].forEach(e => {
-                            html += ' - ' + e + '<br>'
-                        })
-                    }
-                }
-                */
+        var timeStartRewriteObject = timestamp()
+        var eventsToStore = []
+        for (email in result){
+            
+            result[email].timespan = {
+                "start": yesterday.toUTCString(),
+                "end": today.toUTCString()
             }
+            const {userId, notiInfo, changeInfo} = result[email]
 
-            // delete old events and insert new ones
-            const dateTwoMonthsInPast = new Date().setMonth(new Date().getMonth()-2)
-            await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
-            await Event.insertMany(eventsToStore)
+            result[email]["newEpisodes"] = []
+            for (const seriesTitle in notiInfo){
+                var eps = []
+                notiInfo[seriesTitle].forEach(e => {
 
-            await Series.updateMany({ extId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
+                    const episodeWatchedUid = uid.sync(18)
+                    eventsToStore.push({
+                        "eventUid": episodeWatchedUid,
+                        "userId": userId,
+                        "seriesId": e.seriesId,
+                        "seasonNr":  e.seasonNr,
+                        "episodeNr": e.episodeNr,
+                        "dateEventCreated": new Date().toISOString()
+                    })
 
-            var timeEndRewriteObject = timestamp()
-
-            for (email in result){
-                result[email].currentDate = new Date().toDateString()
-                result[email].performance = {
-                    "timeDBQuery": (timeEndQuery-timeStartFunction).toFixed(2),
-                    "timeUpdateSeries": (timeEndUpdateSeries-timeEndQuery).toFixed(2),
-                    "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
-                    "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
-                }
-                await sendEmail(email, result[email])
+                    e.episodeWatchedUrl = generateEventEpisodeWatchedUrl(episodeWatchedUid)
+                    eps.push(e)
+                })
+                
+                result[email]["newEpisodes"].push({
+                    "seriesTitle": seriesTitle,
+                    "showOnWebsiteUrl": generateSeriesUrl(eps[0].seriesId),
+                    "turnOffNotificationsUrl": generateEventNotificationUrl(uid.sync(18)),
+                    "episodes": eps
+                })
+                result[email]["notiInfo"]["seriesTitle"] = null
             }
+            
+            /*
+            if (!isEmpty(changeInfo)){
+                html += changeIntro
+                for (const seriesTitle in changeInfo) {
+                    html += '<b>'+seriesTitle+'</b>:<br>'
+                    changeInfo[seriesTitle].forEach(e => {
+                        html += ' - ' + e + '<br>'
+                    })
+                }
+            }
+            */
         }
+
+        // delete old events and insert new ones
+        const dateTwoMonthsInPast = new Date().setMonth(new Date().getMonth()-2)
+        await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
+        var p1 = Event.insertMany(eventsToStore)
+
+        var p2 = Series.updateMany({ extId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
+
+        var timeEndRewriteObject = timestamp()
+
+        var promiseEmail = []
+        for (email in result){
+            result[email].currentDate = new Date().toDateString()
+            result[email].performance = {
+                "timeDBQuery": (timeEndQuery-timeStartFunction).toFixed(2),
+                "timeUpdateSeries": (timeEndUpdateSeries-timeEndQuery).toFixed(2),
+                "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
+                "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
+            }
+            var promise = sendEmail(email, result[email])
+            promiseEmail.push(promise)
+        }
+        await Promise.all([p1, p2].concat(promiseEmail))
         
-		return { statusCode: 200, body: 'tvmazeUpdate function successfully finished.' }
+		return { statusCode: 200, body: `tvmazeUpdate function successfully finished after roughly ${timeEndRewriteObject-timeStartFunction}ms.` }
 	} catch (err) {
         console.log('tvmazeUpdate function finished with error: ' + err)
         await reportError(err)

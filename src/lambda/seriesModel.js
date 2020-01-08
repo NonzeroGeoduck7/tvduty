@@ -17,7 +17,7 @@ const schema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  nrOfEpisodes: {
+  nrOfAiredEpisodes: {
     type: Number,
     required: false,
   },

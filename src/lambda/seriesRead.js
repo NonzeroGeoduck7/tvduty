@@ -8,6 +8,7 @@ exports.handler = async (event, context) => {
   
   try {
     // Use Series.Model to find all series matching the user
+    const { userId } = JSON.parse(event.body)
     const series = await Series.aggregate([
 	    {
 	  	  $lookup: {
@@ -17,6 +18,8 @@ exports.handler = async (event, context) => {
 	  	    as: 'userseries'
 	      }
       },
+      { $unwind: "$userseries" },
+      { $match: { "userseries.userId": userId } },
       { $sort : { lastAccessed: -1 } }
 	  ]);
 	  

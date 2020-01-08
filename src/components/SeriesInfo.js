@@ -55,7 +55,7 @@ function SeriesInfo ({ match }) {
     },
     {
       name: 'watched',
-      cell: (data) => <button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr, data.index)}>&#10004;</button>,
+      cell: (data) => new Date(data.airstamp)>Date.now()?<div />:<button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr, data.index)}>&#10004;</button>,
       width: '10%',
       resizable: true,
     },
@@ -131,8 +131,8 @@ function SeriesInfo ({ match }) {
 
   useEffect(() => {
     setEpisodeListLoading(true)
-    axios.all([getUserSeries(), getEpisodes()])
-      .then(axios.spread(function (userSeriesRes, episodesRes) {
+    Promise.all([getUserSeries(), getEpisodes()])
+      .then(function ([userSeriesRes, episodesRes]) {
         if (userSeriesRes.data.data.length !== 1){
           Sentry.captureException("userSeries found <> 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data.data)
         } else {
@@ -145,7 +145,7 @@ function SeriesInfo ({ match }) {
           }))
           setEpisodeListLoading(false)
         }
-      }))
+      })
       .catch(err=>console.log(err))
     
   }, [seriesId, user.sub, lastWatchedEpisode])

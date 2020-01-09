@@ -1,11 +1,11 @@
 // SeriesTable.js
 import React, { useState, useEffect } from 'react'
 import SeriesElement from './SeriesElement'
+import EpisodeNewsList from './EpisodesNewsList'
 import Loading from './Loading'
 import { Link } from 'react-router-dom'
 import StackGrid from 'react-stack-grid'
 import { trackWindowScroll } from 'react-lazy-load-image-component'
-import * as Sentry from '@sentry/browser'
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import styled from 'styled-components'
 import SweetAlert from 'react-bootstrap-sweetalert'
@@ -163,8 +163,8 @@ function SeriesTable(scrollPosition) {
 
     return (
         <WrapperDiv>
-            <IpInfoDiv>{ipInfo?`Your IP is ${ipInfo.ip} and points to ${ipInfo.postal} ${ipInfo.city}, ${ipInfo.country}. Organization: ${ipInfo.org}`
-                        :'IP information not available'}
+            <IpInfoDiv>{typeof(ipInfo.ip)!=='undefined'?`Your IP address is ${ipInfo.ip} and points to ${ipInfo.postal} ${ipInfo.city}, ${ipInfo.country}. Organization: ${ipInfo.org}`
+                        :'IP address information not available'}
             </IpInfoDiv>
             
             <div style={{"textAlign": "center"}}>
@@ -172,6 +172,10 @@ function SeriesTable(scrollPosition) {
                     <Button>Add new series</Button>
                 </Link>
             </div>
+
+            <StyledDiv>
+                <EpisodeNewsList />
+            </StyledDiv>
 
             {seriesListLoading ? <Loading /> :
                 <StyledDiv>

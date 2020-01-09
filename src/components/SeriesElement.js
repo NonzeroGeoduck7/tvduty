@@ -35,8 +35,8 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 
 	// this is the progress for all episodes not the ones that aired...
 	var watchPercentage = parseFloat(100*(props.lastWatchedEpisode+1)/props.nrOfEpisodes).toFixed(0)
-	var watchProgress = (props.lastWatchedEpisode+1) + '/' + props.nrOfEpisodes + ' (' +watchPercentage + '%)'
-  	return (
+	
+	return (
 		<div style={{'textAlign': 'center'}}>
 			<Hoverable>
 				{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
@@ -56,7 +56,7 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 			</Hoverable>
 			<div>
 				<label>
-					{props.title} -> ep: {watchProgress}
+					{props.title}
 				</label>
 			</div>
 		</div>

@@ -147,6 +147,14 @@ exports.handler = catchErrors(async (event, context) => {
             },
         ])
 
+        var seriesWhereEpisodesAirToday = await Episodes.aggregate([
+            { $match: {"airstamp": {
+                    $gt: new Date(yesterday).toISOString(),
+                    $lte: new Date(today).toISOString()
+            } } },
+            { $group: { _id: null, airToday: { $addToSet: "$seriesId"} } }
+        ])
+
         var timeEndQuery = timestamp()
         
         //tvmaze
@@ -167,18 +175,10 @@ exports.handler = catchErrors(async (event, context) => {
                 // change measurement to milliseconds for comparison
                 const seriesResponseDate = response[series.extId]*1000
 
-                if(Date.parse(series.lastUpdated) < seriesResponseDate){
+                if(Date.parse(series.lastUpdated) < seriesResponseDate ||
+                    seriesWhereEpisodesAirToday[0].airToday.includes(series.extId)){
                     // episodes need to be updated
                     let seriesId = series.extId
-                    /*
-                    var oldEps = await Episodes.aggregate([
-                        { $match: { $and: [
-                            { seriesId: parseInt(seriesId) },
-                            { "airstamp": {"$gte":  new Date().toISOString()} }] }
-                        },
-                        { $sort : { seasonNr : 1, episodeNr: 1 } },
-                    ])
-                    */
 
                     epsToDelete.push(seriesId)
 
@@ -236,6 +236,7 @@ exports.handler = catchErrors(async (event, context) => {
 
         // update episodes, critically if fails
         try{
+            // update series at the end because of changes number of aired episodes
             await Series.deleteMany({extId: { $in: seriesToDelete }})
             await Series.insertMany(seriesToInsert)
             await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
@@ -310,6 +311,10 @@ exports.handler = catchErrors(async (event, context) => {
                 })
                 var description = 'notiInfo'
                 seriesAirToday.add(ep.series[0].extId)
+                // NOTE:
+                // if we use series information here, we need to ensure 
+                // that the show is updated before this point
+                // otherwise update happens at the end
                 var update = {
                     "seriesTitle": ep.series[0].title,
                     "seriesId": ep.series[0].extId,
@@ -401,8 +406,12 @@ exports.handler = catchErrors(async (event, context) => {
                 "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
                 "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
             }
-            var promise = sendEmail(email, result[email])
-            promiseEmail.push(promise)
+            try{
+                var promise = sendEmail(email, result[email])
+                promiseEmail.push(promise)
+            } catch(err) {
+                await reportError(err)
+            }
         }
         await Promise.all([p1, p2].concat(promiseEmail))
         

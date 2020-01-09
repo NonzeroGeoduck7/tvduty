@@ -1,4 +1,5 @@
 import { url } from 'inspector'
+import { reportError } from '../sentryWrapper'
 
 // send Email Notifications to users if there is informations about their series
 
@@ -36,6 +37,7 @@ export async function sendEmail(receiver, obj) {
 		console.log('sending mail successful: ' + result)
 	} catch(error) {
 		console.log('Error while sending email: ' + error)
+		throw error
 	}
 }
 

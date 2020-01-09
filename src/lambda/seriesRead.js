@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
       },
       { $unwind: "$userseries" },
       { $match: { "userseries.userId": userId } },
-      { $sort : { lastAccessed: -1 } }
+      { $sort : { "userseries.lastAccessed": -1 } }
 	  ]);
 	  
     const response = {

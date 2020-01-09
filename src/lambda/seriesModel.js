@@ -25,11 +25,6 @@ const schema = new mongoose.Schema({
     type: String,
     required: [true, 'status field is required'],
   },
-  lastAccessed: {
-    type: Date,
-    required: false,
-    default: new Date()
-  },
   lastUpdated: {
     type: Date,
     required: false,

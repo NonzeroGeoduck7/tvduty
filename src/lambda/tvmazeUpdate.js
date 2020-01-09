@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import db from '../lambda/server'
 import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
+import UserSeries from '../lambda/userSeriesModel'
 import Event from '../lambda/eventModel'
 
 
@@ -387,7 +388,7 @@ exports.handler = catchErrors(async (event, context) => {
         await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
         var p1 = Event.insertMany(eventsToStore)
 
-        var p2 = Series.updateMany({ extId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
+        var p2 = UserSeries.updateMany({ seriesId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
 
         var timeEndRewriteObject = timestamp()
 

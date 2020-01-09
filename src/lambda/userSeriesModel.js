@@ -26,6 +26,11 @@ const schema = new mongoose.Schema({
     type: Boolean,
     required: [true, 'receiveNotification field is required']
   },
+  lastAccessed: {
+    type: Date,
+    required: false,
+    default: new Date()
+  },
 }),
 UserSeries = mongoose.model('userSeries', schema)
 export default UserSeries

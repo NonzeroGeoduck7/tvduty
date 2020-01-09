@@ -46,7 +46,10 @@ exports.handler = async (event, context, callback) => {
     // mark as watched
     await UserSeries.findOneAndUpdate(
       { userId: userId, seriesId: seriesId },
-      { $set: { "lastWatchedEpisode" : parseInt(query[0].episodeCount)-1, "currentSeason" : seasonNr } } // -1 because of index vs count
+      { $set: {
+        "lastWatchedEpisode" : parseInt(query[0].episodeCount)-1,
+        "currentSeason" : seasonNr }, // -1 because of index vs count
+        "lastAccessed" : new Date() }
     )
 	
     return {

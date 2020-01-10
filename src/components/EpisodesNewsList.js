@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { timeDiff } from '../helper/helperFunctions'
+import { handleErrors, reportError } from '../helper/sentryErrorHandling'
 import { useAuth0 } from '../react-auth0-wrapper'
 import Loading from './Loading'
+import ErrorComponent from './ErrorComponent'
 
 const EpisodesNewsList = React.memo(function EpisodesNewsList() {
     
     const { user } = useAuth0()
+
+    let [hasError, setError] = useState(false)
+    let [errorEventId, setErrorEventId] = useState()
 
     let [episodeNewsLoading, setEpisodeNewsLoading] = useState(false)
     let [episodeNewsList, setEpisodeNewsList] = useState([])
@@ -14,6 +19,12 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
     let [maxNumberAiredEpisodes, setMaxNumberAiredEpisodes] = useState(3)
 
     useEffect(()=>{
+
+        const report = async (err)=>{
+            var eventId = await reportError(err)
+            setErrorEventId(eventId)
+        }
+
         setEpisodeNewsLoading(true)
 
         const data = {
@@ -24,12 +35,17 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
             method: 'POST',
             body: JSON.stringify(data)
         })
+        .then(handleErrors)
         .then(res => res.json())
         .then(response => {
           setEpisodeNewsList(response.data)
           setEpisodeNewsLoading(false)
         })
-        .catch(err => console.log('Error retrieving episodesNewsList: ', err))
+        .catch(err => {
+            console.log('Error while processing result from episodesNewsRead: ', err)
+            report(err)
+            setError(true)
+        })
 
     }, [user.sub])
 
@@ -38,7 +54,9 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
     const maxEpUpcomingArray = episodesUpcomingNewsList.length
     const episodesAiredNewsList = episodeNewsList.filter(r=>new Date(r.airstamp) < Date.now())
     const maxEpAiredArray = episodesAiredNewsList.length
-    return (episodeNewsLoading?<Loading/>:
+    return (
+        hasError ? <ErrorComponent eventId={errorEventId} />:
+        episodeNewsLoading?<Loading/>:
 		<div>
 			<p>upcoming:</p>
             {episodesUpcomingNewsList.slice(0,maxNumberUpcomingEpisodes).map(

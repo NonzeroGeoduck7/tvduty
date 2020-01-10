@@ -1,4 +1,3 @@
-import '../lambda/episodesModel'
 
 export const seasonEpisodeNotation = (seasonNr, episodeNr) => {
     var season = seasonNr

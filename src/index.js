@@ -21,10 +21,9 @@ const onRedirectCallback = appState => {
   );
 };
 
-const { SENTRY_DSN } = process.env;
-Sentry.init({ dsn: SENTRY_DSN });
-
-//Sentry.init({dsn: "https://7138f7d690cd4cac92243def8fa03a08@sentry.io/1792135"})
+if (process.env.NODE_ENV !== 'development'){
+  Sentry.init({dsn: "https://7138f7d690cd4cac92243def8fa03a08@sentry.io/1792135"})
+}
 
 ReactDOM.render(
   <ErrorBoundary>

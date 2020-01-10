@@ -6,16 +6,14 @@ import Episodes from '../lambda/episodesModel'
 import UserSeries from '../lambda/userSeriesModel'
 import Event from '../lambda/eventModel'
 
-
 import { sendEmail } from '../helper/emailNotification.js'
 import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
 import { initSentry, catchErrors, reportError } from '../sentryWrapper'
-initSentry();
+initSentry()
 
 const API_ENDPOINT_UPDATE = 'http://api.tvmaze.com/updates/shows'
 const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
 
-const dotenv = require('dotenv').config()
 const timestamp = require("performance-now")
 const uid = require('uid-safe')
 
@@ -176,7 +174,8 @@ exports.handler = catchErrors(async (event, context) => {
                 const seriesResponseDate = response[series.extId]*1000
 
                 if(Date.parse(series.lastUpdated) < seriesResponseDate ||
-                    seriesWhereEpisodesAirToday[0].airToday.includes(series.extId)){
+                    (seriesWhereEpisodesAirToday.length > 0 &&
+                        seriesWhereEpisodesAirToday[0].airToday.includes(series.extId))){
                     // episodes need to be updated
                     let seriesId = series.extId
 

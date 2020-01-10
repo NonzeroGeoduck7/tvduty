@@ -7,7 +7,7 @@ const dbUrl = process.env.DB_URL,
         useNewUrlParser: true,
         useFindAndModify: false
       }
-console.log('connected to MongoDb')
+
 // Set DB from mongoose connection
 mongoose.connect(dbUrl, dbOptions)
 const db = mongoose.connection

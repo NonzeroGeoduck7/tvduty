@@ -5,10 +5,12 @@ import Series from './seriesModel'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
 import { assureHttpsUrl } from '../helper/helperFunctions'
+import { initSentry, catchErrors, reportError } from '../sentryWrapper'
+initSentry()
 
 import fetch from 'isomorphic-fetch'
 
-exports.handler = async (event, context, callback) => {
+exports.handler = catchErrors(async (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   async function showLookup(seriesId) {
@@ -64,7 +66,10 @@ exports.handler = async (event, context, callback) => {
 			})
 		})
 
-		series.nrOfEpisodes = epsToInsert.length
+		var today = new Date()
+    	today.setHours(22,0,0,0)
+		series.nrOfAiredEpisodes = epsToInsert.filter(e=>new Date(e.airstamp)<today).length
+
 		await Series.create(series)
 		await Episodes.insertMany(epsToInsert)
 
@@ -96,10 +101,11 @@ exports.handler = async (event, context, callback) => {
       body: JSON.stringify(response)
     }
   } catch (err) {
-    console.log('series.create', err)
+	console.log('Error while creating series: ', err)
+	await reportError(err)
     return {
       statusCode: 500,
       body: JSON.stringify({msg: err.message})
     }
   }
-}
+})

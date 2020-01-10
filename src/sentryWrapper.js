@@ -31,13 +31,15 @@ export function catchErrors(handler) {
     return async function(event, context) {
         context.callbackWaitsForEmptyEventLoop = false;
         try {
-            console.log("invoke")
             return await handler.call(this, ...arguments);
         } catch(e) {
             // This catches both sync errors & promise
             // rejections, because we 'await' on the handler
             await reportError(e);
-            throw e;
+            return {
+                statusCode: 500,
+                body: String(e)
+            }
         }
     };
 }

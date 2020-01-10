@@ -1,3 +1,4 @@
+import { handleErrors } from '../helper/sentryErrorHandling'
 
 const transform = (data) => {
     return {
@@ -11,8 +12,13 @@ const transform = (data) => {
 
 export const getIpInformation = async () => {
     return fetch('https://ipapi.co/json')
-        .then(res => res.json())
+        .then(handleErrors)
+        .then(res=>res.json())
         .then(response => {
             return transform(response)
+        })
+        .catch((err) => {
+            // do not send this to Sentry, as some ad-blocker can block this request
+            throw err
         })
 }

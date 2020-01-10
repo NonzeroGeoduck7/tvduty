@@ -11,10 +11,11 @@ import Add from './components/Add'
 import EventResult from './components/EventResult'
 import NotLoggedIn from './components/NotLoggedIn'
 import SettingsPage from './components/SettingsPage'
+import AppContainer from './AppContainer'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-function App(props) {
+function App() {
   const { isAuthenticated, loading } = useAuth0();
 
   if (loading) {
@@ -30,6 +31,7 @@ function App(props) {
           <NavBar />
         </header>
         <Switch>
+          <AppContainer>
           {isAuthenticated ? <React.Fragment>
               <Route path="/" exact component={SeriesTable} />
               <Route path="/series/:extId" component={SeriesInfo} />
@@ -42,6 +44,7 @@ function App(props) {
               <Route path="/event/:eventType/:eventUid" component={EventResult} />
             </React.Fragment>
           }
+          </AppContainer>
         </Switch>
       </BrowserRouter>
     </div>

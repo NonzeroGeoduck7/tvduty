@@ -8,7 +8,7 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(err, info) {
-    this.setState({ hasError: true });
+    this.setState({ hasError: true })
     const eventId = Sentry.captureException(err);
     this.setState({eventId})
   }

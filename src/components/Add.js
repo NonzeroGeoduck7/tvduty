@@ -6,12 +6,18 @@ import { useAuth0 } from '../react-auth0-wrapper'
 import LoadingOverlay from 'react-loading-overlay'
 import placeholder from '../img/placeholder.png'
 import { assureHttpsUrl } from '../helper/helperFunctions'
+import { handleErrors, reportError } from '../helper/sentryErrorHandling'
 import SweetAlert from 'react-bootstrap-sweetalert'
 import Loading from './Loading'
+import ErrorComponent from './ErrorComponent'
 
 function Add () {
 	  
   const { user } = useAuth0();
+
+  let [hasError, setError] = useState(false)
+  let [errorEventId, setErrorEventId] = useState()
+
   let [loading, setLoading] = useState(false) // is loading results from API
   let [processing, setProcessing] = useState(false) // is inserting into database
   let [input, setInput] = useState('')
@@ -28,40 +34,48 @@ function Add () {
 	  const API_ENDPOINT = "https://api.tvmaze.com/search/shows?q="
 	  
 	  if (typeof(input) == "undefined"){
-		  throw new Error("search query is undefined")
+      var errorId = reportError(new Error("search query is undefined"))
+      setError(true)
+      setErrorEventId(errorId)
     }
     
     setLoading(true)
 
-	  const result = await fetch(API_ENDPOINT+input)
+    const result = await fetch(API_ENDPOINT+input)
+      .then(handleErrors)
 	    .then(function(response) {
 	      return response.json();
       })
       .catch(err=>{
-        console.log("encountered error while reading from api: "+err)
+        console.log("Error while reading from tvmaze API: "+JSON.stringify(err))
+        var errorId = reportError(err)
+        setErrorEventId(errorId)
+        setError(true)
       })
     
       setResults(result)
       setLoading(false)
   }
   
-  function postAPI (source, data) {
-     return fetch('/.netlify/functions/' + source, {
-         method: 'PUT',
-         body: JSON.stringify(data)
-       })
-       .then(res => res.json())
-       .catch(err => err)
+  function putAPI (source, data) {
+    return fetch('/.netlify/functions/' + source, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      })
+      .then(handleErrors)
+      .then(res => res.json())
+      .catch(err=>{
+        console.log("Error while reading from tvmaze API: "+JSON.stringify(err))
+        var errorId = reportError(err)
+        setErrorEventId(errorId)
+        setError(true)
+      })
   }
   
   async function addSeries(id) {
     setProcessing(true)
 	  
-	  await postAPI('seriesCreate', {id: id, userId: user.sub})
-      .then(response => {
-        console.log("response from seriesCreate: " + response.msg)
-      })
-      .catch(err => {throw err})
+	  await putAPI('seriesCreate', {id: id, userId: user.sub})
 	  
     setProcessing(false)
     setShowAddSeriesSuccessfulAlert(true)
@@ -73,7 +87,9 @@ function Add () {
     }
   }
 
-  return ( loading ? <Loading />:
+  return (
+  hasError ? <ErrorComponent eventId={errorEventId} />:
+  loading ? <Loading />:
   <LoadingOverlay
     active={processing}
     spinner

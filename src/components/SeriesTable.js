@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import SeriesElement from './SeriesElement'
 import EpisodeNewsList from './EpisodesNewsList'
+import IpInfoComponent from './IpInfoComponent'
+import ErrorComponent from './ErrorComponent'
 import Loading from './Loading'
 import { Link } from 'react-router-dom'
 import StackGrid from 'react-stack-grid'
@@ -11,8 +13,8 @@ import styled from 'styled-components'
 import SweetAlert from 'react-bootstrap-sweetalert'
 
 import { useAuth0 } from '../react-auth0-wrapper'
-import { getWindowDimensions } from '../helper/helperFunctions'
-import { getIpInformation } from '../api/ipLookup'
+import { getWindowDimensions,  } from '../helper/helperFunctions'
+import { handleErrors, reportError } from '../helper/sentryErrorHandling'
 
 const WrapperDiv = styled.div`
 
@@ -64,24 +66,6 @@ const StyledDiv = styled.div`
     border-radius: 3px;
 `
 
-const IpInfoDiv = styled.div`
-    font-size: 12px;
-    text-align: center;
-    color: light-blue;
-`
-
-async function handleSeriesDelete(seriesId, userId) {
-    const data = {
-        seriesId: seriesId,
-        userId: userId
-    }
-
-    await fetch('/.netlify/functions/seriesDelete', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    })
-}
-
 function SeriesTable(scrollPosition) {
 
     function handleKeyPress(key){
@@ -101,6 +85,28 @@ function SeriesTable(scrollPosition) {
         }
     }
 
+    
+    async function handleSeriesDelete(seriesId, userId) {
+        const data = {
+            seriesId: seriesId,
+            userId: userId
+        }
+
+        await fetch('/.netlify/functions/seriesDelete', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+        .then(handleErrors)
+        .catch(err => {
+            console.log('Error while processing result from SeriesRead: ', err)
+            reportError(err)
+            setError(true)
+        })
+    }
+
+    let [hasError, setError] = useState(false)
+    let [errorEventId, setErrorEventId] = useState()
+
     let [deleteMode, setDeleteMode] = useState(false)
     let [showIdToDelete, setShowIdToDelete] = useState(0)
     let [showDeletedAlert, setShowDeletedAlert] = useState(false)
@@ -111,26 +117,22 @@ function SeriesTable(scrollPosition) {
     let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
     let [seriesListLoading, setSeriesListLoading] = useState(false)
     let [searchString, setSearchString] = useState('')
-    let [ipInfo, setIpInfo] = useState({})
 
     const { user } = useAuth0()
     useEffect(() => {
-        console.log("useEffect resize")
         function handleResize() {
           setWindowDimensions(getWindowDimensions())
         }
-
-        getIpInformation().then((res)=>{
-            setIpInfo(res)
-        })
 
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
     }, [])
 
-    // replaces componentDidMount -> reload when user.sub changes
     useEffect(() => {
-        console.log("useEffect method completed, showsTable updated.")
+        const report = async (err)=>{
+            var eventId = await reportError(err)
+            setErrorEventId(eventId)
+        }
       
         setSeriesListLoading(true)
 
@@ -143,17 +145,23 @@ function SeriesTable(scrollPosition) {
             method: 'POST',
             body: JSON.stringify(data)
         })
+        .then(handleErrors)
         .then(res => res.json())
         .then(response => {
           setSeriesList(response.data)
           setOriginalSeriesList(response.data)
           setSeriesListLoading(false)
         })
-        .catch(err => console.log('Error retrieving series: ', err))
+        .catch(err => {
+            console.log('Error while processing result from SeriesRead: ', err.name, err.message)
+            report(err)
+            setError(true)
+        })
     }, [user.sub])
 
     useEffect(() => {
         setSeriesList(originalSeriesList.filter(s=>s.title.toLowerCase().includes(searchString)))
+        // eslint-disable-next-line
     }, [searchString])
 
     const { width } = windowDimensions
@@ -163,9 +171,7 @@ function SeriesTable(scrollPosition) {
 
     return (
         <WrapperDiv>
-            <IpInfoDiv>{typeof(ipInfo.ip)!=='undefined'?`Your IP address is ${ipInfo.ip} and points to ${ipInfo.postal} ${ipInfo.city}, ${ipInfo.country}. Organization: ${ipInfo.org}`
-                        :'IP address information not available'}
-            </IpInfoDiv>
+            <IpInfoComponent />
             
             <div style={{"textAlign": "center"}}>
                 <Link to="/add">
@@ -177,34 +183,37 @@ function SeriesTable(scrollPosition) {
                 <EpisodeNewsList />
             </StyledDiv>
 
-            {seriesListLoading ? <Loading /> :
-                <StyledDiv>
-                    <SearchStringDiv>
-                        { searchString &&
-                            <SearchString>{`filtered to titles containing: '${searchString}', press ESC to remove the filter.`}</SearchString>
-                        }
-                    </SearchStringDiv>
-                    <DeleteButtonDiv>
-                        <DeleteButton onClick={()=>setDeleteMode(!deleteMode)}>delete shows</DeleteButton>
-                    </DeleteButtonDiv>
-                    <StackGrid columnWidth={columnWidth}>
-                        {seriesList.map(c => {
-                            var lastWatchedEpisode = c.userseries.lastWatchedEpisode
-                            return <SeriesElement
-                                isDeleteMode={deleteMode}
-                                deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
-                                scrollPosition={scrollPosition}
-                                key={c.extId}
-                                width={columnWidth/1.25}
-                                lastWatchedEpisode={lastWatchedEpisode}
-                                nrOfEpisodes={c.nrOfAiredEpisodes}
-                                title={c.title}
-                                poster={c.poster}
-                                extId={c.extId} />
-                        })}
-                    </StackGrid>
-                </StyledDiv>
-            }
+            <StyledDiv>
+                {hasError ? <ErrorComponent eventId={errorEventId} />:
+                seriesListLoading ? <Loading /> :
+                    <div>
+                        <SearchStringDiv>
+                            { searchString &&
+                                <SearchString>{`filtered to titles containing: '${searchString}', press ESC to remove the filter.`}</SearchString>
+                            }
+                        </SearchStringDiv>
+                        <DeleteButtonDiv>
+                            <DeleteButton onClick={()=>setDeleteMode(!deleteMode)}>delete shows</DeleteButton>
+                        </DeleteButtonDiv>
+                        <StackGrid columnWidth={columnWidth}>
+                            {seriesList.map(c => {
+                                var lastWatchedEpisode = c.userseries.lastWatchedEpisode
+                                return <SeriesElement
+                                    isDeleteMode={deleteMode}
+                                    deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
+                                    scrollPosition={scrollPosition}
+                                    key={c.extId}
+                                    width={columnWidth/1.25}
+                                    lastWatchedEpisode={lastWatchedEpisode}
+                                    nrOfEpisodes={c.nrOfAiredEpisodes}
+                                    title={c.title}
+                                    poster={c.poster}
+                                    extId={c.extId} />
+                            })}
+                        </StackGrid>
+                    </div>
+                }
+            </StyledDiv>
             {showDeletedAlert &&
                 <SweetAlert
                     warning

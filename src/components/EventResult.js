@@ -1,12 +1,15 @@
 // src/components/EventResult.js
 // 
 import React, { useState, useEffect } from 'react'
-import * as Sentry from '@sentry/browser'
+import { handleErrors, reportError } from '../helper/sentryErrorHandling'
+import ErrorComponent from './ErrorComponent'
 
 function EventResult ({ match }) {
 
-  const { params: { eventType, eventUid } } = match
+  const { params: { eventUid } } = match
 
+  let [hasError, setError] = useState(false)
+  let [errorEventId, setErrorEventId] = useState()
   let [loading, setLoading] = useState(false)
   let [note, setNote] = useState()
   
@@ -15,26 +18,32 @@ function EventResult ({ match }) {
         method: 'POST',
         body: JSON.stringify(data)
       })
+      .then(handleErrors)
       .then(res => res.json())
       .then(response => setNote(response.msg))
-      .catch(err => {
-        Sentry.captureException('error in postAPI of event processing: ', err)
-      })
   }
 
   useEffect(() => {
+    const report = async (err)=>{
+      var eventId = await reportError(err)
+      setErrorEventId(eventId)
+    }
+
     setLoading(true)
 
-    postAPI('processEvent', {eventType: eventType, eventUid: eventUid})
+    postAPI('processEvent', { eventUid: eventUid })
       .catch(err => {
         console.log('process event error: ', err)
-        Sentry.captureException('process event error: ', err)
+        report(err)
+        setError(true)
       })
       .finally(()=> setLoading(false))
-  }, [eventType, eventUid])
+  }, [eventUid])
 
   return (
-    loading ? <div>processing request...</div> : <div>{note}</div>
+      hasError ? <ErrorComponent eventId={errorEventId} />
+        : loading ? <div>processing request...</div>
+          : <div>{note}</div>
   )
 }
 

@@ -8,6 +8,10 @@ const schema = new mongoose.Schema({
     type: String,
     required: [true, 'eventUid field is required']
   },
+  eventType: {
+    type: Number,
+    required: [true, 'eventType field required']
+  },
   userId: {
     type: String,
     required: [true, 'userId field is required']
@@ -18,16 +22,20 @@ const schema = new mongoose.Schema({
   },
   seasonNr: {
     type: Number,
-    required: [true, 'seasonNr field is required'],
+    required: [false],
   },
   episodeNr: {
     type: Number,
-    required: [true, 'episodeNr field is required'],
+    required: [false],
   },
   dateEventCreated: {
     type: String,
     required: [true, 'dateEventCreated field is required']
   },
+  dateEventProcessed: {
+    type: String,
+    required: [false],
+  }
 })
 
 export default mongoose.model('events', schema)

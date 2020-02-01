@@ -101,12 +101,8 @@ function isEmpty(obj) {
 	return true;
 }
 
-function generateEventEpisodeWatchedUrl(uniqueUid) {
-	return process.env.URL+'/event/1/'+uniqueUid
-}
-
-function generateEventNotificationUrl(uniqueUid) {
-    return process.env.URL+'/event/2/'+uniqueUid
+function generateEventUrl(uniqueUid) {
+	return process.env.URL+'/event/'+uniqueUid
 }
 
 function generateSeriesUrl(seriesId) {
@@ -352,8 +348,10 @@ exports.handler = catchErrors(async (event, context) => {
                 notiInfo[seriesTitle].forEach(e => {
 
                     const episodeWatchedUid = uid.sync(18)
+                    const episodeWatchedEventType = 1;
                     eventsToStore.push({
                         "eventUid": episodeWatchedUid,
+                        "eventType": episodeWatchedEventType,
                         "userId": userId,
                         "seriesId": e.seriesId,
                         "seasonNr":  e.seasonNr,
@@ -361,14 +359,25 @@ exports.handler = catchErrors(async (event, context) => {
                         "dateEventCreated": new Date().toISOString()
                     })
 
-                    e.episodeWatchedUrl = generateEventEpisodeWatchedUrl(episodeWatchedUid)
+                    e.episodeWatchedUrl = generateEventUrl(episodeWatchedUid)
                     eps.push(e)
                 })
                 
+                const turnOffNotificationsUid = uid.sync(18);
+                const turnOffNotificationsEventType = 2;
+
+                eventsToStore.push({
+                    "eventUid": turnOffNotificationsUid,
+                    "eventType": turnOffNotificationsEventType,
+                    "userId": userId,
+                    "seriesId": e.seriesId,
+                    "dateEventCreated": new Date().toISOString()
+                })
+
                 result[email]["newEpisodes"].push({
                     "seriesTitle": seriesTitle,
                     "showOnWebsiteUrl": generateSeriesUrl(eps[0].seriesId),
-                    "turnOffNotificationsUrl": generateEventNotificationUrl(uid.sync(18)),
+                    "turnOffNotificationsUrl": generateEventUrl(turnOffNotificationsUid),
                     "episodes": eps
                 })
                 result[email]["notiInfo"]["seriesTitle"] = null

@@ -4,32 +4,11 @@ import db from './server'
 import Event from './eventModel'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
+import { initSentry, catchErrors, reportError } from '../sentryWrapper'
+initSentry()
 
-async function postAPI (source, data) {
-  return fetch('/.netlify/functions/' + source, {
-      method: 'post',
-      body: JSON.stringify(data)
-    })
-    .then(res => {return res.json()})
-    .catch(err => err)
-}
-
-async function markWatched(seriesId, userId, seasonNr, episodeNr) {
-  await postAPI('episodesMarkWatched', {seriesId: seriesId, seasonNr: seasonNr, episodeNr: episodeNr, userId: userId})
-    .then(response=>{console.log(response)})
-    .catch(err => err)
-}
-
-async function processEventEpisodeWatched(eventUid) {
-  const event = await Event.aggregate([
-    { $match: { eventUid: eventUid } },
-  ])
-
-  if (event.length != 1){
-    throw new Error('there is not exactly 1 event for eventUid '+eventUid)
-  }
+async function processEventEpisodeWatched(userId, seriesId, seasonNr, episodeNr) {
   
-  const {seriesId, userId, seasonNr, episodeNr} = event[0]
   var query = await Episodes.aggregate([{
     $match: {
       $and: [{
@@ -77,18 +56,29 @@ async function processEventEpisodeWatched(eventUid) {
   }
 }
 
-async function processEventNotificationSettings(eventUid){
+async function processEventTurnOffNotification(userId, seriesId){
+  await UserSeries.findOneAndUpdate(
+    { userId: userId, seriesId: seriesId },
+    { $set: { "receiveNotification" : false } }
+  )
+  
   return {
-    statusCode: 405,
-    body: JSON.stringify({msg: "Method Not Allowed"})
+    statusCode: 200,
+    body: JSON.stringify({msg: "successfully disabled notifications for this show"})
   }
 }
 
-exports.handler = async (event, context) => {
+async function markEventAsProcessed(eventUid){
+  await Event.findOneAndUpdate(
+    {eventUid: eventUid},
+    { $set: { "dateEventProcessed" : new Date().toISOString() } }
+  )
+}
+
+exports.handler = catchErrors(async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
   
   const data = JSON.parse(event.body),
-        eventType = data.eventType,
         eventUid = data.eventUid
 
   if (typeof(eventUid) === "undefined"){
@@ -99,13 +89,48 @@ exports.handler = async (event, context) => {
   }
   
   try{
-    var result
     
+    const event = await Event.aggregate([
+      { $match: { eventUid: eventUid } },
+    ])
+  
+    if (event.length <= 0){
+      return {
+        statusCode: 200,
+        body: JSON.stringify({msg: 'event not found'})
+      }
+    } else if (event.length > 1){
+      reportError(new Error('eventUid '+eventUid+' describes multiple events'))
+      return {
+        statusCode: 200,
+        body: JSON.stringify({msg: 'eventUid '+eventUid+' describes multiple events, error.'})
+      }
+    }
+
+    if (event[0].dateEventProcessed){
+      return {
+        statusCode: 200,
+        body: JSON.stringify({msg: 'The event with Uid '+eventUid+' has already been processed'})
+      }
+    }
+
+    const eventType = event[0].eventType
+    var result = {
+      statusCode: 200,
+      body: JSON.stringify({msg: 'unknown eventType '+eventType})
+    }
+
     if (eventType == '1'){
-      result = await processEventEpisodeWatched(eventUid)
+      const { userId, seriesId, seasonNr, episodeNr } = event[0]
+
+      result = await processEventEpisodeWatched(userId, seriesId, seasonNr, episodeNr)
+      await markEventAsProcessed(eventUid)
     }
     if (eventType == '2'){
-      result = await processEventNotificationSettings(eventUid)
+      const { userId, seriesId } = event[0]
+
+      result = await processEventTurnOffNotification(userId, seriesId)
+      await markEventAsProcessed(eventUid)
     }
 
     return result
@@ -116,4 +141,4 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({msg: err.message})
     }
   }
-}
+})

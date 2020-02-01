@@ -4,6 +4,7 @@ import db from './server'
 import Series from './seriesModel'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
+import Event from './eventModel'
 
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
@@ -21,6 +22,7 @@ exports.handler = async (event, context) => {
       await Episodes.deleteMany({seriesId: seriesId})
     }
     await UserSeries.deleteMany({seriesId: seriesId, userId: userId})
+    await Event.deleteMany({seriesId: seriesId, userId: userId})
 
     const response = {
       msg: "Series successfully deleted"

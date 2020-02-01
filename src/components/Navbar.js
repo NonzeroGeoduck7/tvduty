@@ -4,6 +4,7 @@ import React from 'react'
 import { useAuth0 } from '../react-auth0-wrapper'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
+import KeyboardEventHandler from 'react-keyboard-event-handler';
 
 import Logo from '../img/logo.png';
 
@@ -103,6 +104,12 @@ const NavBar = () => {
         <LoginButtonDiv>
           <LoginButton onClick={() => loginWithRedirect({})}>Log in</LoginButton>
         </LoginButtonDiv>
+      }
+      {!isAuthenticated &&
+        <KeyboardEventHandler
+          handleKeys={['enter']}
+          isExclusive={true}
+          onKeyEvent={() => loginWithRedirect({})} />
       }
     </Wrapper>
   )

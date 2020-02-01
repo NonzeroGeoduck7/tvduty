@@ -128,6 +128,7 @@ function SeriesTable(scrollPosition) {
         return () => window.removeEventListener("resize", handleResize)
     }, [])
 
+    const userSub = user && user.sub
     useEffect(() => {
         const report = async (err)=>{
             var eventId = await reportError(err)
@@ -138,7 +139,7 @@ function SeriesTable(scrollPosition) {
 
         // Fetch the Series from the database
         const data = {
-            userId: user.sub
+            userId: user ? user.sub : ''
         }
 
         fetch('/.netlify/functions/seriesRead', {
@@ -157,7 +158,7 @@ function SeriesTable(scrollPosition) {
             report(err)
             setError(true)
         })
-    }, [user.sub])
+    }, [user, userSub])
 
     useEffect(() => {
         setSeriesList(originalSeriesList.filter(s=>s.title.toLowerCase().includes(searchString)))

@@ -18,6 +18,7 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
     let [maxNumberUpcomingEpisodes, setMaxNumberUpcomingEpisodes] = useState(2)
     let [maxNumberAiredEpisodes, setMaxNumberAiredEpisodes] = useState(3)
 
+    const userSub = user && user.sub
     useEffect(()=>{
 
         const report = async (err)=>{
@@ -28,7 +29,7 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
         setEpisodeNewsLoading(true)
 
         const data = {
-            userId: user.sub
+            userId: user ? user.sub : ''
         }
 
         fetch('/.netlify/functions/episodesNewsRead', {
@@ -47,7 +48,7 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
             setError(true)
         })
 
-    }, [user.sub])
+    }, [user, userSub])
 
     
     const episodesUpcomingNewsList = episodeNewsList.filter(r=>new Date(r.airstamp) >= Date.now()).reverse()

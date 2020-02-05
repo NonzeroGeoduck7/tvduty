@@ -19,6 +19,14 @@ exports.handler = async (event, context) => {
     // Use Episodes.Model to find all series matching the user
     const episodes = await Episodes.aggregate([
       { $match: { seriesId: parseInt(seriesId) } }, //parse to int necessary for some reason
+      {
+        $lookup: {
+            from: 'userepisodes',
+            localField: 'extId',
+            foreignField: 'episodeId',
+            as: 'userepisodes'
+        }
+      },
       { $sort : { seasonNr : 1, episodeNr: 1 } },
     ])
 

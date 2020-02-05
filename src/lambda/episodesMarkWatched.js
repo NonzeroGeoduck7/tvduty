@@ -1,9 +1,8 @@
 // episodesMarkWatched.js
 import mongoose from 'mongoose'
 import db from './server'
-import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
-import { seasonEpisodeNotation } from '../helper/helperFunctions'
+import UserEpisodes from './userEpisodesModel'
 
 exports.handler = async (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
@@ -11,13 +10,13 @@ exports.handler = async (event, context, callback) => {
   try {
     const data = JSON.parse(event.body);
 
-    const seasonNr = parseInt(data.seasonNr),
-          episodeNr = parseInt(data.episodeNr),
+    const episodesArray = JSON.parse(data.episodesArray),
           seriesId = parseInt(data.seriesId),
           userId = data.userId;
     
-    console.log("mark "+seriesId+" "+seasonEpisodeNotation(seasonNr, episodeNr)+" as watched.")
+    console.log("mark "+seriesId+" episodes "+JSON.stringify(episodesArray)+" as watched.")
 
+    /*
     var query = await Episodes.aggregate([{
       $match: {
         $and: [{
@@ -38,23 +37,45 @@ exports.handler = async (event, context, callback) => {
             }]
           }]
         }]
-      }
-    },{
-      $count: "episodeCount"
-    }])
+      }},
+      { $sort : { seasonNr : 1, episodeNr: 1 } },
+      {
+        $project: {
+          "_id": 0,
+          "extId":1,
+        }
+      },
+    ])
+    */
+
+    var numAdded = 0
+
+    var upsertRes = await UserEpisodes.bulkWrite( 
+      episodesArray.map((entry)=>
+        ({
+          updateOne: {
+            filter: { userId: userId, episodeId: entry },
+            update: { $set: { timeWatched: new Date() } },
+            upsert: true,
+          }
+        })
+      )
+    )
+
+    numAdded = upsertRes.nUpserted
 
     // mark as watched
     await UserSeries.findOneAndUpdate(
       { userId: userId, seriesId: seriesId },
-      { $set: {
-        "lastWatchedEpisode" : parseInt(query[0].episodeCount)-1,
-        "currentSeason" : seasonNr }, // -1 because of index vs count
-        "lastAccessed" : new Date() }
+        { 
+          $set: { "lastAccessed" : new Date() } ,
+          $inc: { "numWatchedEpisodes" : numAdded, }
+        }
     )
-	
+
     return {
       statusCode: 201,
-      body: JSON.stringify(query)
+      body: JSON.stringify(upsertRes)
     }
   } catch (err) {
     console.log('error in episodesMarkWatched: ', err)

@@ -71,7 +71,7 @@ const EpisodesNewsList = React.memo(function EpisodesNewsList() {
             {maxNumberUpcomingEpisodes < maxEpUpcomingArray ?
                 <button onClick={()=>setMaxNumberUpcomingEpisodes(maxNumberUpcomingEpisodes+3)}>extend</button>
                 :
-                <p>no more episodes scheduled for the next 7 days</p>
+                <p>no more episodes scheduled. Some episodes might not be announced at this point.</p>
             }
             <br/>
             

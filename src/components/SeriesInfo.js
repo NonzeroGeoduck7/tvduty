@@ -14,6 +14,10 @@ import { getWindowDimensions } from "../helper/helperFunctions"
 import SweetAlert from 'react-bootstrap-sweetalert'
 import { handleErrors, reportError } from '../helper/sentryErrorHandling'
 
+import Dropdown from 'react-bootstrap/Dropdown'
+import Button from 'react-bootstrap/Button'
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
+
 const axios = require('axios')
 
 function SeriesInfo ({ match }) {
@@ -23,7 +27,6 @@ function SeriesInfo ({ match }) {
   let [errorEventId, setErrorEventId] = useState()
   
   let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
-  let [lastWatchedEpisode, setLastWatchedEpisode] = useState()
   let [showMarkAsWatchedAlert, setShowMarkAsWatchedAlert] = useState(false)
 
   useEffect(() => {
@@ -35,7 +38,7 @@ function SeriesInfo ({ match }) {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  const columns = [
+  var columns = [
     {
       name: 'Number',
       selector: 'seasonEpisodeNotation',
@@ -60,7 +63,7 @@ function SeriesInfo ({ match }) {
     },
     {
       name: 'watched',
-      cell: (data) => new Date(data.airstamp)>Date.now()?<div />:<button onClick={()=>markWatched(data.seriesId, data.seasonNr, data.episodeNr, data.index)}>&#10004;</button>,
+      cell: (data) => new Date(data.airstamp)>Date.now() || data.watched ?<div />:<button onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>&#10004;</button>,
       width: '10%',
       resizable: true,
     },
@@ -93,16 +96,47 @@ function SeriesInfo ({ match }) {
         effect="blur"
         src={data.image}
       />
+
+      {new Date(data.airstamp)<Date.now()&&
+        <div>
+          { !data.watched ? 
+            <Dropdown as={ButtonGroup}>
+              <Button variant="success" onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>mark as watched</Button>
+
+              <Dropdown.Toggle split variant="success" id="dropdown-split-basic" />
+
+              <Dropdown.Menu alignRight={true}>
+                <Dropdown.Item onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, true, data.index)}>bulk mark</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+            :
+            <Dropdown as={ButtonGroup}>
+              <Button variant="warning" onClick={()=>unmarkWatched(data.seriesId, data.extId)}>remove from watched episodes</Button>
+            </Dropdown>
+          }
+          </div>
+        }
+
       <div dangerouslySetInnerHTML={{ __html: data.summary }} />
     </div>
   )
   
-  async function markWatched(seriesId, seasonNr, episodeNr, index) {
+  async function markWatched(seriesId, episodeId, seasonNr, episodeNr, bulk, index) {
     
+    let episodesArray = []
+    if (bulk){
+      for(const e of episodesList){
+        if (e.seasonNr < seasonNr || (e.seasonNr == seasonNr && e.episodeNr <= episodeNr)){
+          episodesArray.push(e.extId)
+        }
+      }
+    } else {
+      episodesArray.push(episodeId)
+    }
+
     const data = {
       seriesId: seriesId,
-      seasonNr: seasonNr,
-      episodeNr: episodeNr,
+      episodesArray: JSON.stringify(episodesArray),
       userId: user.sub
     }
 
@@ -111,16 +145,41 @@ function SeriesInfo ({ match }) {
         body: JSON.stringify(data)
       })
       .then(handleErrors)
+      .then(()=>setTriggerRerender(!triggerRerender))
       .catch(err=>{
         console.log("Error while markAsWatched: show "+seriesId+": season: "+seasonNr+" episode: "+episodeNr+" "+JSON.stringify(err))
         reportError(err)
         setError(true)
       })
 
-    setLastWatchedEpisode(index)
+    setShowMarkAsWatchedAlert(true)
+  }
+
+  async function unmarkWatched(seriesId, extId) {
+    
+    const data = {
+      episodeId: extId,
+      seriesId: seriesId,
+      userId: user.sub,
+    }
+
+    await fetch('/.netlify/functions/episodesUnmarkWatched', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+      .then(handleErrors)
+      .then(()=>setTriggerRerender(!triggerRerender))
+      .catch(err=>{
+        console.log("Error while unmarkAsWatched: episodeId " + extId + ": " +JSON.stringify(err))
+        reportError(err)
+        setError(true)
+      })
+
     setShowMarkAsWatchedAlert(true)
   }
   
+  let [triggerRerender, setTriggerRerender] = useState(false)
+
   let [episodeListLoading, setEpisodeListLoading] = useState(false)
   let [episodesList, setEpisodesList] = useState([])
 
@@ -157,11 +216,10 @@ function SeriesInfo ({ match }) {
         } else if (userSeriesRes.data.data.length > 1){
           throw new Error("userSeries found > 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data.data)
         } else {
-          var lastWatchedEp = userSeriesRes.data.data[0].lastWatchedEpisode
           setEpisodesList(episodesRes.data.data.map(function(entry, idx){
             entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
             entry.index=idx
-            entry.watched=idx <= lastWatchedEp
+            entry.watched=entry.userepisodes.length > 0
             return entry
           }))
           setEpisodeListLoading(false)
@@ -173,7 +231,7 @@ function SeriesInfo ({ match }) {
         setError(true)
       })
     // eslint-disable-next-line
-  }, [seriesId, user.sub, lastWatchedEpisode])
+  }, [seriesId, user.sub, triggerRerender])
 
   return (
     hasError ? <ErrorComponent eventId={errorEventId} />:
@@ -216,6 +274,7 @@ function SeriesInfo ({ match }) {
             </SweetAlert>
           }
         </div>
+        
         }
     </div>
   );

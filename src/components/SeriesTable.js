@@ -198,14 +198,14 @@ function SeriesTable(scrollPosition) {
                         </DeleteButtonDiv>
                         <StackGrid columnWidth={columnWidth}>
                             {seriesList.map(c => {
-                                var lastWatchedEpisode = c.userseries.lastWatchedEpisode
+                                var numWatchedEpisodes = c.userseries.numWatchedEpisodes
                                 return <SeriesElement
                                     isDeleteMode={deleteMode}
                                     deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
                                     scrollPosition={scrollPosition}
                                     key={c.extId}
                                     width={columnWidth/1.25}
-                                    lastWatchedEpisode={lastWatchedEpisode}
+                                    numWatchedEpisodes={numWatchedEpisodes}
                                     nrOfEpisodes={c.nrOfAiredEpisodes}
                                     title={c.title}
                                     poster={c.poster}

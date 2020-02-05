@@ -34,7 +34,7 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 	})
 
 	// this is the progress for all episodes not the ones that aired...
-	var watchPercentage = parseFloat(100*(props.lastWatchedEpisode+1)/props.nrOfEpisodes).toFixed(0)
+	var watchPercentage = parseFloat(100*(props.numWatchedEpisodes)/props.nrOfEpisodes).toFixed(0)
 	
 	return (
 		<div style={{'textAlign': 'center'}}>

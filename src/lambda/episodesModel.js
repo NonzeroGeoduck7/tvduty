@@ -37,10 +37,6 @@ const schema = new mongoose.Schema({
 		  type: Number,
 		  required: false,
 		},
-		timeWatched: {
-		  type: Date,
-		  required: false,
-		},
         summary: {
             type: String,
 			required: false

@@ -24,8 +24,7 @@ exports.handler = async (event, context) => {
       {
         $match: {
           "airstamp": {
-            $gt: new Date(date_from).toISOString(),
-            $lte: new Date(date_to).toISOString()
+            $gt: new Date(date_from).toISOString()
           }
         }
       },

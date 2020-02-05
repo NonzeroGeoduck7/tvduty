@@ -12,9 +12,9 @@ const schema = new mongoose.Schema({
     type: Number,
     required: [true, 'seriesId field is required']
   },
-  lastWatchedEpisode: {
+  numWatchedEpisodes: {
     type: Number,
-    required: [true, 'lastWatchedEpisode field is required'],
+    required: [true, 'numWatchedEpisodes field is required'],
     default: -1,
   },
   currentSeason: {

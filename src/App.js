@@ -14,6 +14,7 @@ import NotVerifiedAccount from './components/NotVerifiedAccount'
 import SettingsPage from './components/SettingsPage'
 import AppContainer from './AppContainer'
 
+// react-bootstrap-sweetalert
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 function App() {

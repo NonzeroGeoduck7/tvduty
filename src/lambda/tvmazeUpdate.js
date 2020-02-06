@@ -348,7 +348,7 @@ exports.handler = catchErrors(async (event, context) => {
                 notiInfo[seriesTitle].forEach(e => {
 
                     const episodeWatchedUid = uid.sync(18)
-                    const episodeWatchedEventType = 1;
+                    const episodeWatchedEventType = 1
                     eventsToStore.push({
                         "eventUid": episodeWatchedUid,
                         "eventType": episodeWatchedEventType,
@@ -363,14 +363,14 @@ exports.handler = catchErrors(async (event, context) => {
                     eps.push(e)
                 })
                 
-                const turnOffNotificationsUid = uid.sync(18);
-                const turnOffNotificationsEventType = 2;
+                const turnOffNotificationsUid = uid.sync(18)
+                const turnOffNotificationsEventType = 2
 
                 eventsToStore.push({
                     "eventUid": turnOffNotificationsUid,
                     "eventType": turnOffNotificationsEventType,
                     "userId": userId,
-                    "seriesId": e.seriesId,
+                    "seriesId": eps[0].seriesId,
                     "dateEventCreated": new Date().toISOString()
                 })
 

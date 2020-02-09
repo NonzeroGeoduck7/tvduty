@@ -18,8 +18,6 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 
-const axios = require('axios')
-
 function SeriesInfo ({ match }) {
   const { user } = useAuth0();
 
@@ -126,7 +124,7 @@ function SeriesInfo ({ match }) {
     let episodesArray = []
     if (bulk){
       for(const e of episodesList){
-        if (e.seasonNr < seasonNr || (e.seasonNr == seasonNr && e.episodeNr <= episodeNr)){
+        if (e.seasonNr < seasonNr || (e.seasonNr === seasonNr && e.episodeNr <= episodeNr)){
           episodesArray.push(e.extId)
         }
       }
@@ -191,16 +189,23 @@ function SeriesInfo ({ match }) {
   const { params: { extId:seriesId } } = match
   
   function getUserSeries() {
-    return axios.post('/.netlify/functions/userSeriesRead', {
-      seriesId: seriesId,
-      userId: user.sub
-    })
+    return fetch('/.netlify/functions/userSeriesRead', {
+      method: 'POST',
+      body: JSON.stringify({
+        seriesId: seriesId,
+        userId: user.sub
+      })
+    }).then(res=>res.json())
   }
 
   function getEpisodes() {
-    return axios.post('/.netlify/functions/episodesRead', {
-      seriesId: seriesId
-    })
+    return fetch('/.netlify/functions/episodesRead', {
+      method: 'POST',
+      body: JSON.stringify({
+        seriesId: seriesId
+      })
+    }).then(res=>res.json())
+
   }
 
   useEffect(() => {
@@ -213,13 +218,14 @@ function SeriesInfo ({ match }) {
     setEpisodeListLoading(true)
     Promise.all([getUserSeries(), getEpisodes()])
       .then(function ([userSeriesRes, episodesRes]) {
-        if (userSeriesRes.data.data.length < 1){
+
+        if (userSeriesRes.data.length < 1){
           setEpisodeListLoading(false)
           setShowNotAdded(true)
-        } else if (userSeriesRes.data.data.length > 1){
-          throw new Error("userSeries found > 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data.data)
+        } else if (userSeriesRes.data.length > 1){
+          throw new Error("userSeries found > 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data)
         } else {
-          setEpisodesList(episodesRes.data.data.map(function(entry, idx){
+          setEpisodesList(episodesRes.data.map(function(entry, idx){
             entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
             entry.index=idx
             entry.watched=entry.userepisodes.length > 0

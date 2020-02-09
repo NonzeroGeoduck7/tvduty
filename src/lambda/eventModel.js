@@ -20,13 +20,9 @@ const schema = new mongoose.Schema({
     type: Number,
     required: [true, 'seriesId field is required']
   },
-  seasonNr: {
+  episodeId: {
     type: Number,
-    required: [false],
-  },
-  episodeNr: {
-    type: Number,
-    required: [false],
+    required: [true, 'episodeId field is required']
   },
   dateEventCreated: {
     type: String,

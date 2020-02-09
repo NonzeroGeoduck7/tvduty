@@ -146,9 +146,10 @@ function SeriesInfo ({ match }) {
       })
       .then(handleErrors)
       .then(()=>setTriggerRerender(!triggerRerender))
-      .catch(err=>{
+      .catch(async err=>{
         console.log("Error while markAsWatched: show "+seriesId+": season: "+seasonNr+" episode: "+episodeNr+" "+JSON.stringify(err))
-        reportError(err)
+        var eventId = await reportError(err)
+        setErrorEventId(eventId)
         setError(true)
       })
 
@@ -169,9 +170,10 @@ function SeriesInfo ({ match }) {
       })
       .then(handleErrors)
       .then(()=>setTriggerRerender(!triggerRerender))
-      .catch(err=>{
+      .catch(async err=>{
         console.log("Error while unmarkAsWatched: episodeId " + extId + ": " +JSON.stringify(err))
-        reportError(err)
+        var eventId = await reportError(err)
+        setErrorEventId(eventId)
         setError(true)
       })
 
@@ -205,6 +207,7 @@ function SeriesInfo ({ match }) {
     const report = async (err)=>{
       var eventId = await reportError(err)
       setErrorEventId(eventId)
+      setError(true)
     }
 
     setEpisodeListLoading(true)
@@ -228,7 +231,6 @@ function SeriesInfo ({ match }) {
       .catch(err=>{
         console.log("Error while loading userSeries and episodes: "+err.name+" "+err.message)
         report(err)
-        setError(true)
       })
     // eslint-disable-next-line
   }, [seriesId, user.sub, triggerRerender])

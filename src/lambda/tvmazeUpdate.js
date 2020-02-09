@@ -313,6 +313,7 @@ exports.handler = catchErrors(async (event, context) => {
                 var update = {
                     "seriesTitle": ep.series[0].title,
                     "seriesId": ep.series[0].extId,
+                    "episodeId": ep.extId,
                     "seasonNr": ep.seasonNr,
                     "episodeNr": ep.episodeNr,
                     "seasonEpisodeNotation": seasonEpisodeNotation(ep.seasonNr,ep.episodeNr),
@@ -354,8 +355,7 @@ exports.handler = catchErrors(async (event, context) => {
                         "eventType": episodeWatchedEventType,
                         "userId": userId,
                         "seriesId": e.seriesId,
-                        "seasonNr":  e.seasonNr,
-                        "episodeNr": e.episodeNr,
+                        "episodeId":  e.episodeId,
                         "dateEventCreated": new Date().toISOString()
                     })
 

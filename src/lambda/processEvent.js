@@ -2,48 +2,28 @@
 import mongoose from 'mongoose'
 import db from './server'
 import Event from './eventModel'
-import Episodes from './episodesModel'
+import UserEpisodes from './userEpisodesModel'
 import UserSeries from './userSeriesModel'
 import { initSentry, catchErrors, reportError } from '../sentryWrapper'
 initSentry()
 
-async function processEventEpisodeWatched(userId, seriesId, seasonNr, episodeNr) {
+async function processEventEpisodeWatched(userId, seriesId, episodeId) {
   
-  var query = await Episodes.aggregate([{
-    $match: {
-      $and: [{
-        seriesId: seriesId,
-      },{
-        // constraints on season/episode
-        $or: [{
-          seasonNr: {
-            $lt: seasonNr,
-          },
-        },
-        {
-          $and: [{
-            seasonNr: seasonNr,
-            episodeNr: {
-              $lte: episodeNr,
-            }
-          }]
-        }]
-      }]
-    }
-  },
-  {
-    $count: "episodeCount"
-  }
-  ])
+  await UserEpisodes.updateOne(
+    { userId: userId, episodeId: episodeId },
+    { $set: { timeWatched: new Date() } },
+    { upsert: true, }
+  )
 
-  if (query.length != 1){
-    throw new Error('error while computing the number of watched episodes')
-  }
+  let numAdded = 1
 
   // mark as watched
   await UserSeries.findOneAndUpdate(
     { userId: userId, seriesId: seriesId },
-    { $set: { "lastWatchedEpisode" : parseInt(query[0].episodeCount)-1, "currentSeason" : seasonNr } } // -1 because of index vs count
+      { 
+        $set: { "lastAccessed" : new Date() } ,
+        $inc: { "numWatchedEpisodes" : numAdded, }
+      }
   )
 
   const response = {
@@ -88,57 +68,48 @@ exports.handler = catchErrors(async (event, context) => {
       }
   }
   
-  try{
-    
-    const event = await Event.aggregate([
-      { $match: { eventUid: eventUid } },
-    ])
-  
-    if (event.length <= 0){
-      return {
-        statusCode: 200,
-        body: JSON.stringify({msg: 'event not found'})
-      }
-    } else if (event.length > 1){
-      reportError(new Error('eventUid '+eventUid+' describes multiple events'))
-      return {
-        statusCode: 200,
-        body: JSON.stringify({msg: 'eventUid '+eventUid+' describes multiple events, error.'})
-      }
-    }
+  const eventDB = await Event.aggregate([
+    { $match: { eventUid: eventUid } },
+  ])
 
-    if (event[0].dateEventProcessed){
-      return {
-        statusCode: 200,
-        body: JSON.stringify({msg: 'The event with Uid '+eventUid+' has already been processed'})
-      }
-    }
-
-    const eventType = event[0].eventType
-    var result = {
-      statusCode: 200,
-      body: JSON.stringify({msg: 'unknown eventType '+eventType})
-    }
-
-    if (eventType == '1'){
-      const { userId, seriesId, seasonNr, episodeNr } = event[0]
-
-      result = await processEventEpisodeWatched(userId, seriesId, seasonNr, episodeNr)
-      await markEventAsProcessed(eventUid)
-    }
-    if (eventType == '2'){
-      const { userId, seriesId } = event[0]
-
-      result = await processEventTurnOffNotification(userId, seriesId)
-      await markEventAsProcessed(eventUid)
-    }
-
-    return result
-  } catch (err) {
-    console.log(err)
+  if (eventDB.length <= 0){
     return {
-      statusCode: 500,
-      body: JSON.stringify({msg: err.message})
+      statusCode: 200,
+      body: JSON.stringify({msg: 'event not found'})
+    }
+  } else if (eventDB.length > 1){
+    reportError(new Error('eventUid '+eventUid+' describes multiple events'))
+    return {
+      statusCode: 200,
+      body: JSON.stringify({msg: 'eventUid '+eventUid+' describes multiple events, error.'})
     }
   }
+
+  if (eventDB[0].dateEventProcessed){
+    return {
+      statusCode: 200,
+      body: JSON.stringify({msg: 'The event with Uid '+eventUid+' has already been processed'})
+    }
+  }
+
+  const eventType = eventDB[0].eventType
+  var result = {
+    statusCode: 200,
+    body: JSON.stringify({msg: 'unknown eventType '+eventType})
+  }
+
+  if (eventType == '1'){
+    const { userId, seriesId, episodeId } = eventDB[0]
+
+    result = await processEventEpisodeWatched(userId, seriesId, episodeId)
+    await markEventAsProcessed(eventUid)
+  }
+  if (eventType == '2'){
+    const { userId, seriesId } = eventDB[0]
+
+    result = await processEventTurnOffNotification(userId, seriesId)
+    await markEventAsProcessed(eventUid)
+  }
+
+  return result
 })

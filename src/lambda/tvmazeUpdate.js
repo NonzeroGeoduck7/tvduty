@@ -121,38 +121,40 @@ exports.handler = catchErrors(async (event, context) => {
 	try{
 
         var timeStartFunction = timestamp()
-		// mongoDB
-        const seriesList = await Series.aggregate([
-            {
-                $lookup: {
-                    from: 'userseries',
-                    localField: 'extId',
-                    foreignField: 'seriesId',
-                    as: 'userseries'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'userseries.userId',
-                    foreignField: 'userId',
-                    as: 'users'
-                }
-            },
-        ])
+		
+        let [seriesList, seriesWhereEpisodesAirToday, response] = await Promise.all([
+            Series.aggregate([
+                {
+                    $lookup: {
+                        from: 'userseries',
+                        localField: 'extId',
+                        foreignField: 'seriesId',
+                        as: 'userseries'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userseries.userId',
+                        foreignField: 'userId',
+                        as: 'users'
+                    }
+                },
+            ]),
 
-        var seriesWhereEpisodesAirToday = await Episodes.aggregate([
-            { $match: {"airstamp": {
-                    $gt: new Date(yesterday).toISOString(),
-                    $lte: new Date(today).toISOString()
-            } } },
-            { $group: { _id: null, airToday: { $addToSet: "$seriesId"} } }
+            Episodes.aggregate([
+                { $match: {"airstamp": {
+                        $gt: new Date(yesterday).toISOString(),
+                        $lte: new Date(today).toISOString()
+                } } },
+                { $group: { _id: null, airToday: { $addToSet: "$seriesId"} } }
+            ]),
+
+            getTvMazeData()
         ])
 
         var timeEndQuery = timestamp()
         
-        //tvmaze
-        const response = await getTvMazeData()
         log('API accessed.')
         
         var result = {}
@@ -161,9 +163,7 @@ exports.handler = catchErrors(async (event, context) => {
         }
         
         var seriesToInsert = []
-        var seriesToDelete = []
         var epsToInsert = []
-        var epsToDelete = []
         for (const series of seriesList){
             try {
                 // change measurement to milliseconds for comparison
@@ -174,8 +174,6 @@ exports.handler = catchErrors(async (event, context) => {
                         seriesWhereEpisodesAirToday[0].airToday.includes(series.extId))){
                     // episodes need to be updated
                     let seriesId = series.extId
-
-                    epsToDelete.push(seriesId)
 
                     let info = await getInformationForSeries(seriesId)
                     let newEps = info._embedded.episodes
@@ -218,7 +216,6 @@ exports.handler = catchErrors(async (event, context) => {
                         "nrOfAiredEpisodes": nrOfAiredEpisodes,
                         "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
                     }
-                    seriesToDelete.push(series.extId)
                     seriesToInsert.push(obj)
 
                     epsToInsert = epsToInsert.concat(eps)
@@ -232,10 +229,38 @@ exports.handler = catchErrors(async (event, context) => {
         // update episodes, critically if fails
         try{
             // update series at the end because of changes number of aired episodes
-            await Series.deleteMany({extId: { $in: seriesToDelete }})
-            await Series.insertMany(seriesToInsert)
-            await Episodes.deleteMany({seriesId: { $in: epsToDelete }})
-            await Episodes.insertMany(epsToInsert)
+            
+            var promises = []
+            if (seriesToInsert.length > 0){
+                var p = Series.bulkWrite( 
+                    seriesToInsert.map((entry)=>
+                    ({
+                        updateOne: {
+                        filter: { extId: entry.extId },
+                        update: entry,
+                        upsert: true,
+                        }
+                    })
+                    )
+                )
+                promises.push(p)
+            }
+            if (epsToInsert.length > 0){
+                var p = Episodes.bulkWrite( 
+                    epsToInsert.map((entry)=>
+                    ({
+                        updateOne: {
+                        filter: { extId: entry.extId },
+                        update: entry,
+                        upsert: true,
+                        }
+                    })
+                    )
+                )
+                promises.push(p)
+            }
+
+            await Promise.all(promises)
 
         } catch (err) {
             log(">>>>>")
@@ -396,14 +421,14 @@ exports.handler = catchErrors(async (event, context) => {
             */
         }
 
+        var timeEndRewriteObject = timestamp()
+        
         // delete old events and insert new ones
-        const dateTwoMonthsInPast = new Date().setMonth(new Date().getMonth()-2)
-        await Event.deleteMany({dateEventCreated: { $lte: new Date(dateTwoMonthsInPast).toISOString() } })
+        const dateThreeMonthsInPast = new Date().setMonth(new Date().getMonth()-3)
+        await Event.deleteMany({dateEventCreated: { $lte: new Date(dateThreeMonthsInPast).toISOString() } })
         var p1 = Event.insertMany(eventsToStore)
 
         var p2 = UserSeries.updateMany({ seriesId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
-
-        var timeEndRewriteObject = timestamp()
 
         var promiseEmail = []
         for (email in result){
@@ -422,8 +447,10 @@ exports.handler = catchErrors(async (event, context) => {
             }
         }
         await Promise.all([p1, p2].concat(promiseEmail))
+
+        var timeUpdateEventAndUserseriesAndMailsSent = timestamp()
         
-		return { statusCode: 200, body: `tvmazeUpdate function successfully finished after roughly ${timeEndRewriteObject-timeStartFunction}ms.` }
+		return { statusCode: 200, body: `tvmazeUpdate function successfully finished after roughly ${timeUpdateEventAndUserseriesAndMailsSent-timeStartFunction}ms.` }
 	} catch (err) {
         console.log('tvmazeUpdate function finished with error: ' + err)
         await reportError(err)

@@ -3,6 +3,7 @@ import { reportError } from '../sentryWrapper'
 
 // send Email Notifications to users if there is informations about their series
 
+var juice = require('juice')
 const mustache = require('mustache')
 const timestamp = require("performance-now")
 
@@ -15,7 +16,7 @@ const send = require('gmail-send')({
 export async function sendEmail(receiver, obj) {
 	try {
 		var time1 = timestamp()
-		var html = mustache.render(template, obj)
+		var html = juice(mustache.render(template, obj))
 		var time2 = timestamp()
 		console.log('mustache rendering: '+(time2-time1)+'ms')
 		
@@ -41,7 +42,7 @@ export async function sendEmail(receiver, obj) {
 	}
 }
 
-const template = ""+
+const template = ``+
 `
 <html>
 <head>
@@ -64,14 +65,14 @@ const template = ""+
 			text-transform: uppercase;
 			text-decoration: none;
 			background: #ffffff;
-			padding: 20px;
+			padding: 10px 20px 10px 20px;
 			border: 4px solid #494949 !important;
 			display: inline-block;
 			transition: all 0.4s ease 0s;
 		}
 		.button:hover {
 			color: #ffffff !important;
-			background: #f6b93b;
+			background-color: #f6b93b;
 			border-color: #ffffff !important;
 			transition: all 0.4s ease 0s;
 		}
@@ -85,45 +86,45 @@ const template = ""+
 			<tr>
 				<td style="font-size:36pt; padding-top: 80px; padding-left: 85px; padding-right: 85px; padding-bottom: 25px">
 					{{currentDate}}<br>
-					The following episodes are now available:
+					The following episodes are available today:
 				</td>
 			</tr>
 			{{#newEpisodes}}
 			<tr>
 				<td>
 					<table class="transparentBackgroundTable" width="780" border="0" cellspacing="0" cellpadding="0">
-						<tr>
+						<tr style="background-color: transparent;">
 							<td style="font-size:18pt; padding-top: 40px; padding-left: 85px; padding-right: 85px; padding-bottom: 15px">
 								<b>{{seriesTitle}}</b>
 							</td>
 						</tr>
-						<tr>
+						<tr style="background-color: transparent;">
 							<td style="font-size:12pt; padding-top: 5px; padding-left: 85px; padding-right: 85px; padding-bottom: 5px">
 								<table class="transparentBackgroundTable">
 								{{#episodes}}
-									<tr>
+									<tr style="background-color: transparent;">
 										<td colspan="2">
 											{{seriesTitle}} {{seasonEpisodeNotation}}: {{episodeTitle}}
 										</td>
-									<tr>
-									<tr>
+									</tr><tr style="background-color: transparent;">
+									</tr><tr style="background-color: transparent;">
 										{{#episodeImage}}
 										<td style="width: 300px; height:168px">
-											<img src="{{.}}" alt="" style="width: 100%"/>
+											<img src="{{.}}" alt="" style="width: 100%">
 										</td>
 										{{/episodeImage}}
-										<td style="height: 168px; overflow-y: auto">
+										<td><div style="height: 168px; overflow-y: auto">
 											{{episodeSummary}}<br><br>exact airdate: {{episodeAirstamp}}.
-										</td>
+										</div></td>
 									</tr>
-									<tr>
-										<td class="buttonCell" align="center">
-											<a class="button" href="{{showOnWebsiteUrl}}" target="_blank" rel="nofollow noopener">
+									<tr style="background-color: transparent;">
+										<td class="buttonCell" align="center" style="padding-top: 10px;">
+											<a class="button" href="{{showOnWebsiteUrl}}" target="_blank" rel="nofollow noopener" style="text-transform: uppercase;text-decoration: none;background: #ffffff;padding: 20px;display: inline-block;transition: all 0.4s ease 0s;color: #494949 !important;border: 4px solid #494949 !important;">
 												Open Website
 											</a>
 										</td>
-										<td class="buttonCell" align="center">
-											<a class="button" href="{{episodeWatchedUrl}}" target="_blank" rel="nofollow noopener">
+										<td class="buttonCell" align="center" style="padding-top: 10px;">
+											<a class="button" href="{{episodeWatchedUrl}}" target="_blank" rel="nofollow noopener" style="text-transform: uppercase;text-decoration: none;background: #ffffff;padding: 20px;display: inline-block;transition: all 0.4s ease 0s;color: #494949 !important;border: 4px solid #494949 !important;">
 												Mark as watched
 											</a>
 										</td>
@@ -132,14 +133,14 @@ const template = ""+
 								</table>
 							</td>
 						</tr>
-						<tr>
+						<tr style="background-color: transparent;">
 							<td style="font-size:12pt; padding-top: 20px; padding-left: 85px; padding-right: 85px; padding-bottom: 15px">
 								(<a href="{{turnOffNotificationsUrl}}">turn off notifications for this show</a>)
 							</td>
-						<tr>
-					</table>
-				<td>
-			</tr>
+						</tr><tr style="background-color: transparent;">
+					</tr></table>
+				</td><td>
+			</td></tr>
 			{{/newEpisodes}}
 			<tr>
 				<td>
@@ -150,7 +151,6 @@ const template = ""+
 	
 	<center style="color: #000000; font-size: 11px; margin-bottom: 4px;">some performance measurements:<br>db query: {{performance.timeDBQuery}}ms, db update: {{performance.timeUpdateSeries}}ms,<br>data gathering: {{performance.timeCreateObj}}ms, data transformation: {{performance.timeRewriteObject}}ms.</center>
 	</center>
-</center>
+
 </body>
-</html>
-`
+</html>`

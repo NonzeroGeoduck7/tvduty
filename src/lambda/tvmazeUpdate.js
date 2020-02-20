@@ -5,6 +5,7 @@ import Series from '../lambda/seriesModel'
 import Episodes from '../lambda/episodesModel'
 import UserSeries from '../lambda/userSeriesModel'
 import Event from '../lambda/eventModel'
+import Log from '../lambda/logModel'
 
 import { sendEmail } from '../helper/emailNotification.js'
 import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
@@ -430,6 +431,17 @@ exports.handler = catchErrors(async (event, context) => {
 
         var p2 = UserSeries.updateMany({ seriesId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
 
+        var logsToStore = []
+        logsToStore.push({
+            _id: mongoose.Types.ObjectId(),
+            logType: 1000,
+            logDate: new Date(),
+            dbUpdateDuration: (timeEndUpdateSeries-timeEndQuery).toFixed(2),
+            numSeriesUpdated: _.size(seriesToInsert),
+            numEmailsSent: _.size(result)
+        })
+        var p3 = Log.insertMany(logsToStore)
+        
         var promiseEmail = []
         for (email in result){
             result[email].currentDate = new Date().toDateString()
@@ -446,7 +458,7 @@ exports.handler = catchErrors(async (event, context) => {
                 await reportError(err)
             }
         }
-        await Promise.all([p1, p2].concat(promiseEmail))
+        await Promise.all([p1, p2, p3].concat(promiseEmail))
 
         var timeUpdateEventAndUserseriesAndMailsSent = timestamp()
         

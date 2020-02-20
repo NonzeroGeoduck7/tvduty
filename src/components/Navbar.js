@@ -4,9 +4,9 @@ import React from 'react'
 import { useAuth0 } from '../react-auth0-wrapper'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
-import KeyboardEventHandler from 'react-keyboard-event-handler';
+import KeyboardEventHandler from 'react-keyboard-event-handler'
 
-import Logo from '../img/logo.png';
+import LogoFull from '../img/logo_full.png'
 
 const Wrapper = styled.div`
     background: #f5f7f9;
@@ -17,6 +17,12 @@ const Wrapper = styled.div`
 
 const LogoDiv = styled.div`
     text-align: left;
+    display: inline-block;
+    width: 33%;
+`
+
+const LogoFullDiv = styled.div`
+    text-align: center;
     display: inline-block;
     width: 33%;
 `
@@ -41,7 +47,7 @@ const LogoutButtonDiv = styled.div`
 const LoginButtonDiv = styled.div`
     text-align: right;
     display: inline-block;
-    width: 66%;
+    width: 33%;
     vertical-align: bottom;
 `
 
@@ -82,28 +88,38 @@ const NavBar = () => {
   return (
     <Wrapper>
 	  
-      <LogoDiv>
-        <Link to="/">
-          <img src={Logo} alt={"logo.png"} style={{"height":"96px", "width":"96px"}}></img>
-        </Link>
-      </LogoDiv>
-	    {user && <UsernameDiv>{user.name}</UsernameDiv>}
-      
       {isAuthenticated ? 
-        <LogoutButtonDiv>
-          <Link to="/settings">
-            <SettingsButton>
-              &#9881;
-            </SettingsButton>
-          </Link>
-          <LogoutButton onClick={() => logout()}>
-            Log out
-          </LogoutButton>
-        </LogoutButtonDiv>
+        <div>
+          <LogoDiv>
+            <Link to="/">
+              <img src={LogoFull} alt={"logo_full.png"} style={{"height":"96px"}}></img>
+            </Link>
+          </LogoDiv>
+          {user && <UsernameDiv>{user.name}</UsernameDiv>}
+        
+          <LogoutButtonDiv>
+            <Link to="/settings">
+              <SettingsButton>
+                &#9881;
+              </SettingsButton>
+            </Link>
+            <LogoutButton onClick={() => logout()}>
+              Log out
+            </LogoutButton>
+          </LogoutButtonDiv>
+        </div>
       :
-        <LoginButtonDiv>
-          <LoginButton onClick={() => loginWithRedirect({})}>Log in</LoginButton>
-        </LoginButtonDiv>
+        <div>
+          <LogoDiv></LogoDiv>
+          <LogoFullDiv>
+            <Link to="/">
+              <img src={LogoFull} alt={"logo_full.png"} style={{"height":"96px"}}></img>
+            </Link>
+          </LogoFullDiv>
+          <LoginButtonDiv>
+            <LoginButton onClick={() => loginWithRedirect({})}>Log in</LoginButton>
+          </LoginButtonDiv>
+        </div>
       }
       {!isAuthenticated &&
         <KeyboardEventHandler

@@ -18,6 +18,8 @@ const API_ENDPOINT_EPISODES = 'http://api.tvmaze.com/shows/'
 const timestamp = require("performance-now")
 const uid = require('uid-safe')
 
+var _ = require('underscore')
+
 async function getTvMazeData() {
 	let data = await fetch(API_ENDPOINT_UPDATE, {
 		method: 'GET',

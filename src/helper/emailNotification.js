@@ -1,16 +1,22 @@
-import { url } from 'inspector'
-import { reportError } from '../sentryWrapper'
 
 // send Email Notifications to users if there is informations about their series
+
+var _ = require('underscore')
 
 var juice = require('juice')
 const mustache = require('mustache')
 const timestamp = require("performance-now")
 
-const send = require('gmail-send')({
-	user: process.env.GMAIL_USERNAME,
-	pass: process.env.GMAIL_PASSWORD,
-	subject: '[tvDuty] ['+new Date().toDateString()+'] status',
+const nodemailer = require('nodemailer');
+
+var transporter = nodemailer.createTransport({
+	host: 'smtp.zoho.eu',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: process.env.ZOHO_NEWSLETTER_USERNAME,
+        pass: process.env.ZOHO_NEWSLETTER_PASSWORD
+    }
 })
 
 export async function sendEmail(receiver, obj) {
@@ -28,17 +34,20 @@ export async function sendEmail(receiver, obj) {
 		}
 		subjectString = subjectString+', '+new Date().toDateString()
 		
-		const {result,full} = await send({
-			from: '"tvDuty"',
-			subject: subjectString,
+		var mailOptions = {
+			from: `"WhenAirsTheNextEpisode" <${process.env.ZOHO_NEWSLETTER_USERNAME}>`, // sender address (who sends)
 			to: receiver,
-			html: html,
-		})
-		
-		console.log('sending mail successful: ' + result)
-	} catch(error) {
-		console.log('Error while sending email: ' + error)
-		throw error
+			subject: subjectString,
+			html: html
+		}
+
+		let info = await transporter.sendMail(mailOptions)
+
+		console.log(`sending mail successful: ${info.messageId}`)
+
+	} catch(err) {
+		console.log(`Error while sending email: ${err}`)
+		throw err
 	}
 }
 

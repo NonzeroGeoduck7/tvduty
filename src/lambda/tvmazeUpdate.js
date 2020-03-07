@@ -338,6 +338,8 @@ exports.handler = catchErrors(async (event, context) => {
                 // if we use series information here, we need to ensure 
                 // that the show is updated before this point
                 // otherwise update happens at the end
+
+                var epDate = new Date(ep.airstamp)
                 var update = {
                     "seriesTitle": ep.series[0].title,
                     "seriesId": ep.series[0].extId,
@@ -348,7 +350,7 @@ exports.handler = catchErrors(async (event, context) => {
                     "episodeTitle": ep.title,
                     "episodeImage": ep.image,
                     "episodeSummary": ep.summary,
-                    "episodeAirstamp": ep.airstamp
+                    "episodeAirDateTime": epDate.toDateString() + " " + epDate.toLocaleTimeString('ch-CH')
                 }
 
                 result = addToMailBody(result, email, description, ep.series[0].title, update)
@@ -369,6 +371,8 @@ exports.handler = catchErrors(async (event, context) => {
                 "start": yesterday.toUTCString(),
                 "end": today.toUTCString()
             }
+            result[email].numEpisodesToday = 0
+
             const {userId, notiInfo, changeInfo} = result[email]
 
             result[email]["newEpisodes"] = []
@@ -408,6 +412,8 @@ exports.handler = catchErrors(async (event, context) => {
                     "turnOffNotificationsUrl": generateEventUrl(turnOffNotificationsUid),
                     "episodes": eps
                 })
+                result[email].numEpisodesToday += _.size(eps)
+
                 result[email]["notiInfo"]["seriesTitle"] = null
             }
             
@@ -447,12 +453,9 @@ exports.handler = catchErrors(async (event, context) => {
         var promiseEmail = []
         for (email in result){
             result[email].currentDate = new Date().toDateString()
-            result[email].performance = {
-                "timeDBQuery": (timeEndQuery-timeStartFunction).toFixed(2),
-                "timeUpdateSeries": (timeEndUpdateSeries-timeEndQuery).toFixed(2),
-                "timeCreateObj": (timeEndCreateMailObject-timeEndUpdateSeries).toFixed(2),
-                "timeRewriteObject": (timeEndRewriteObject - timeStartRewriteObject).toFixed(2)
-            }
+            result[email].logoSrc = "https://www.whenairsthenextepisode.com/static/media/logo_font.png"
+            result[email].websiteUrl = process.env.URL
+            result[email].contactEmail = process.env.ZOHO_CONTACT_MAIL
             try{
                 var promise = sendEmail(email, result[email])
                 promiseEmail.push(promise)

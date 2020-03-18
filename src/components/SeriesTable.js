@@ -201,6 +201,8 @@ function SeriesTable(scrollPosition) {
                                 var numWatchedEpisodes = c.userseries.numWatchedEpisodes
                                 return <SeriesElement
                                     isDeleteMode={deleteMode}
+                                    nextEpisodeAirstamp={c.nextEpisodeAirstamp}
+                                    nextEpisodeNotation={c.nextEpisodeNotation}
                                     deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
                                     scrollPosition={scrollPosition}
                                     key={c.extId}

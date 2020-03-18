@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
   }
   
   try {
-    // Use Episodes.Model to find all series matching the user
+    // Use Episodes.Model to find all episodes matching the seriesId
     const episodes = await Episodes.aggregate([
       { $match: { seriesId: parseInt(seriesId) } }, //parse to int necessary for some reason
       {

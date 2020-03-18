@@ -181,6 +181,18 @@ exports.handler = catchErrors(async (event, context) => {
                     let info = await getInformationForSeries(seriesId)
                     let newEps = info._embedded.episodes
 
+                    // infos for next airing episode
+                    let nextEpisodeAirstamp = null
+                    let nextEpisodeNotation = null
+
+                    const nextEpisodeUrl = info._links!=null?(info._links.nextepisode!=null?info._links.nextepisode.href:null):null
+                    
+                    let idNextEpisode = null
+                    if (nextEpisodeUrl != null) {
+                        var tmp = nextEpisodeUrl.lastIndexOf('/');
+                        idNextEpisode = nextEpisodeUrl.substring(tmp + 1);
+                    }
+
                     var eps = []
                     newEps.forEach(function(ep){
                         eps.push({
@@ -194,6 +206,11 @@ exports.handler = catchErrors(async (event, context) => {
                             "runtime":ep.runtime,
                             "summary":ep.summary
                         })
+
+                        if (ep.id == idNextEpisode){
+                            nextEpisodeNotation = seasonEpisodeNotation(ep.season, ep.number)
+                            nextEpisodeAirstamp = ep.airstamp
+                        }
                     })
                     
                     // CHANGES ON EPISODE LEVEL
@@ -202,23 +219,21 @@ exports.handler = catchErrors(async (event, context) => {
                         email.push(user.email)
                     })
                     
-                    var description = 'changeInfo'
-                    var seriesTitle = series.title
-
-                    //eps.forEach(function(ep, idx){
-                    //    result = addToMailBody(result, email, description, seriesTitle, diff(ep, oldEps[idx]))
-                    //})
-                    
                     // series object is changed and written back to db
                     const nrOfAiredEpisodes = eps.filter(e=>new Date(e.airstamp)<today).length
+
                     let obj = {
                         "title": series.title,
                         "extId": series.extId,
                         "lastUpdated": new Date(),
                         "status": info.status,
                         "nrOfAiredEpisodes": nrOfAiredEpisodes,
+                        "imdbId": info.externals!=null?info.externals.imdb:null,
                         "poster": info.image!=null?assureHttpsUrl(info.image.original):null,
+                        "nextEpisodeAirstamp": nextEpisodeAirstamp,
+                        "nextEpisodeNotation": nextEpisodeNotation
                     }
+                    
                     seriesToInsert.push(obj)
 
                     epsToInsert = epsToInsert.concat(eps)
@@ -440,6 +455,7 @@ exports.handler = catchErrors(async (event, context) => {
         var p2 = UserSeries.updateMany({ seriesId: { $in: Array.from(seriesAirToday) }}, { $set: { "lastAccessed" : new Date() } })
 
         var logsToStore = []
+        
         logsToStore.push({
             _id: mongoose.Types.ObjectId(),
             logType: 1000,
@@ -448,6 +464,7 @@ exports.handler = catchErrors(async (event, context) => {
             numSeriesUpdated: _.size(seriesToInsert),
             numEmailsSent: _.size(result)
         })
+        
         var p3 = Log.insertMany(logsToStore)
         
         var promiseEmail = []

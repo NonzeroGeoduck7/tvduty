@@ -13,6 +13,10 @@ const schema = new mongoose.Schema({
     type: Number,
     required: [true, 'extId field is required']
   },
+  imdbId: {
+    type: String,
+    required: false,
+  },
   poster: {
     type: String,
     required: false,
@@ -28,8 +32,16 @@ const schema = new mongoose.Schema({
   lastUpdated: {
     type: Date,
     required: false,
-    default: new Date
+    default: new Date,
   },
+  nextEpisodeAirstamp: {
+    type: Date,
+    required: false,
+  },
+  nextEpisodeNotation: {
+    type: String,
+    required: false,
+  }
 }),
 Series = mongoose.model('series', schema)
 export default Series

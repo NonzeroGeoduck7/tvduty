@@ -47,11 +47,20 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 	var watchPercentage = parseFloat(100*(props.numWatchedEpisodes)/props.nrOfEpisodes).toFixed(0)
 	
 	var nextEpisodeText = ""
-	if (watchPercentage - 100 < 5e-5 && props.nextEpisodeNotation!=null && props.nextEpisodeAirstamp!=null){
-		nextEpisodeText = ""
-			+ "next: "+props.nextEpisodeNotation
-			+ " ("+new Date(props.nextEpisodeAirstamp).toLocaleDateString()+")"
-			+ ", in "+timeDiff(props.nextEpisodeAirstamp, new Date())
+	if (props.nextEpisodeNotation!=null && props.nextEpisodeAirstamp!=null){
+		nextEpisodeText = "next: "+props.nextEpisodeNotation
+
+		if (new Date(props.nextEpisodeAirstamp).getDate() === new Date().getDate()){
+			nextEpisodeText = nextEpisodeText + " (today)"
+		} else {
+			nextEpisodeText = nextEpisodeText + " ("+new Date(props.nextEpisodeAirstamp).toLocaleDateString()+")"
+		}
+
+		if (new Date(props.nextEpisodeAirstamp) > new Date()){
+			nextEpisodeText = nextEpisodeText + ", in "+timeDiff(props.nextEpisodeAirstamp, new Date())
+		} else {
+			nextEpisodeText = nextEpisodeText + ", "+timeDiff(props.nextEpisodeAirstamp, new Date())+" ago"
+		}
 	}
 
 	return (

@@ -5,7 +5,7 @@ import Log from './logModel'
 import Series from './seriesModel'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
-import { assureHttpsUrl } from '../helper/helperFunctions'
+import { assureHttpsUrl, seasonEpisodeNotation } from '../helper/helperFunctions'
 import { initSentry, catchErrors, reportError } from '../sentryWrapper'
 initSentry()
 
@@ -39,20 +39,21 @@ exports.handler = catchErrors(async (event, context, callback) => {
 	var numSeriesInDb = await Series.countDocuments({extId: seriesId})
 	if (numSeriesInDb < 1) {
 		// series not yet in database
-		const show = await showLookup(seriesId, )
+		const show = await showLookup(seriesId)
+	
 		const {name: title, image, status} = show
-		var series = {
-			_id: mongoose.Types.ObjectId(),
-			title: title,
-			extId: seriesId,
-			status: status,
-			poster: image!=null?assureHttpsUrl(image.original):null,
-			lastUpdated: new Date(),
-			__v: 0
+
+		let nextEpisodeAirstamp = null
+		let nextEpisodeNotation = null
+
+		const nextEpisodeUrl = show._links!=null?(show._links.nextepisode!=null?show._links.nextepisode.href:null):null
+		
+		let idNextEpisode = null
+		if (nextEpisodeUrl != null) {
+			var tmp = nextEpisodeUrl.lastIndexOf('/');
+			idNextEpisode = nextEpisodeUrl.substring(tmp + 1);
 		}
 
-		seriesTitle = title
-    
 		// insert episodes
 		let episodes = show._embedded.episodes
 
@@ -69,7 +70,25 @@ exports.handler = catchErrors(async (event, context, callback) => {
 				"runtime":ep.runtime,
 				"summary":ep.summary
 			})
+
+			if (ep.id == idNextEpisode){
+				nextEpisodeNotation = seasonEpisodeNotation(ep.season, ep.number)
+				nextEpisodeAirstamp = ep.airstamp
+			}
 		})
+
+		var series = {
+			_id: mongoose.Types.ObjectId(),
+			title: title,
+			extId: seriesId,
+			status: status,
+			poster: image!=null?assureHttpsUrl(image.original):null,
+			lastUpdated: new Date(),
+			nextEpisodeAirstamp: nextEpisodeAirstamp,
+			nextEpisodeNotation: nextEpisodeNotation
+		}
+
+		seriesTitle = title
 
 		var today = new Date()
     	today.setHours(22,0,0,0)

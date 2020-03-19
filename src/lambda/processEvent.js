@@ -1,14 +1,25 @@
 // processEvent.js
 import mongoose from 'mongoose'
 import db from './server'
+import Log from './logModel'
 import Event from './eventModel'
 import UserEpisodes from './userEpisodesModel'
 import UserSeries from './userSeriesModel'
 import { initSentry, catchErrors, reportError } from '../sentryWrapper'
 initSentry()
 
-async function processEventEpisodeWatched(userId, seriesId, episodeId) {
+async function processEventEpisodeWatched(userId, seriesId, seriesTitle, episodeId, episodeNotation) {
   
+  const logEntry = {
+    _id: mongoose.Types.ObjectId(),
+    logType: 3002,
+    logDate: new Date(),
+    userId: userId,
+    seriesTitle: seriesTitle,
+    episodeNotation: episodeNotation
+  }
+  let promiseLog = Log.create(logEntry)
+
   await UserEpisodes.updateOne(
     { userId: userId, episodeId: episodeId },
     { $set: { timeWatched: new Date() } },
@@ -18,13 +29,15 @@ async function processEventEpisodeWatched(userId, seriesId, episodeId) {
   let numAdded = 1
 
   // mark as watched
-  await UserSeries.findOneAndUpdate(
+  let promiseUserSeries = UserSeries.findOneAndUpdate(
     { userId: userId, seriesId: seriesId },
       { 
         $set: { "lastAccessed" : new Date() } ,
         $inc: { "numWatchedEpisodes" : numAdded, }
       }
   )
+
+  await Promise.all([promiseLog, promiseUserSeries])
 
   const response = {
     msg: "event successfully processed",
@@ -99,9 +112,9 @@ exports.handler = catchErrors(async (event, context) => {
   }
 
   if (eventType == '1'){
-    const { userId, seriesId, episodeId } = eventDB[0]
+    const { userId, seriesId, seriesTitle, episodeId, episodeNotation } = eventDB[0]
 
-    result = await processEventEpisodeWatched(userId, seriesId, episodeId)
+    result = await processEventEpisodeWatched(userId, seriesId, seriesTitle, episodeId, episodeNotation)
     await markEventAsProcessed(eventUid)
   }
   if (eventType == '2'){

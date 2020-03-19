@@ -211,7 +211,8 @@ function SeriesTable(scrollPosition) {
                                     nrOfEpisodes={c.nrOfAiredEpisodes}
                                     title={c.title}
                                     poster={c.poster}
-                                    extId={c.extId} />
+                                    extId={c.extId}
+                                    status={c.status} />
                             })}
                         </StackGrid>
                     </div>

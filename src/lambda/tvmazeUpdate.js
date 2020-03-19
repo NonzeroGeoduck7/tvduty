@@ -403,7 +403,9 @@ exports.handler = catchErrors(async (event, context) => {
                         "userId": userId,
                         "seriesId": e.seriesId,
                         "episodeId":  e.episodeId,
-                        "dateEventCreated": new Date().toISOString()
+                        "seriesTitle": seriesTitle,
+                        "episodeNotation": e.seasonEpisodeNotation,
+                        "dateEventCreated": new Date()
                     })
 
                     e.episodeWatchedUrl = generateEventUrl(episodeWatchedUid)
@@ -418,7 +420,8 @@ exports.handler = catchErrors(async (event, context) => {
                     "eventType": turnOffNotificationsEventType,
                     "userId": userId,
                     "seriesId": eps[0].seriesId,
-                    "dateEventCreated": new Date().toISOString()
+                    "seriesTitle": seriesTitle,
+                    "dateEventCreated": new Date()
                 })
 
                 result[email]["newEpisodes"].push({
@@ -456,6 +459,7 @@ exports.handler = catchErrors(async (event, context) => {
 
         var logsToStore = []
         
+        /*
         logsToStore.push({
             _id: mongoose.Types.ObjectId(),
             logType: 1000,
@@ -464,6 +468,7 @@ exports.handler = catchErrors(async (event, context) => {
             numSeriesUpdated: _.size(seriesToInsert),
             numEmailsSent: _.size(result)
         })
+        */
         
         var p3 = Log.insertMany(logsToStore)
         

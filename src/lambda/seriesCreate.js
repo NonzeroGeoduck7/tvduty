@@ -1,6 +1,7 @@
 // seriesCreate.js
 import mongoose from 'mongoose'
 import db from './server'
+import Log from './logModel'
 import Series from './seriesModel'
 import Episodes from './episodesModel'
 import UserSeries from './userSeriesModel'
@@ -32,6 +33,8 @@ exports.handler = catchErrors(async (event, context, callback) => {
 	const data = JSON.parse(event.body)
 	const seriesId = data.id
 	const userId = data.userId
+
+	let seriesTitle = ""
 	
 	var numSeriesInDb = await Series.countDocuments({extId: seriesId})
 	if (numSeriesInDb < 1) {
@@ -39,14 +42,16 @@ exports.handler = catchErrors(async (event, context, callback) => {
 		const show = await showLookup(seriesId, )
 		const {name: title, image, status} = show
 		var series = {
-				_id: mongoose.Types.ObjectId(),
-				title: title,
-				extId: seriesId,
-				status: status,
-				poster: image!=null?assureHttpsUrl(image.original):null,
-				lastUpdated: new Date(),
-				__v: 0
-			}
+			_id: mongoose.Types.ObjectId(),
+			title: title,
+			extId: seriesId,
+			status: status,
+			poster: image!=null?assureHttpsUrl(image.original):null,
+			lastUpdated: new Date(),
+			__v: 0
+		}
+
+		seriesTitle = title
     
 		// insert episodes
 		let episodes = show._embedded.episodes
@@ -88,6 +93,14 @@ exports.handler = catchErrors(async (event, context, callback) => {
 			receiveNotification: true,
 			__v: 0
 		}
+		const logEntry = {
+			_id: mongoose.Types.ObjectId(),
+            logType: 2000,
+            logDate: new Date(),
+			userId: userId,
+			seriesTitle: seriesTitle
+		}
+		await Log.create(logEntry)
     	await UserSeries.create(userSeries)
 	} else {
 		console.log(`series with id ${seriesId} and user ${userId} already in database, skipped.`)

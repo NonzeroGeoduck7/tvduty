@@ -10,15 +10,20 @@ import { useAuth0 } from "../react-auth0-wrapper"
 import { seasonEpisodeNotation } from "../helper/helperFunctions"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 import EpisodePlaceholder from '../img/placeholder.png'
-import { getWindowDimensions } from "../helper/helperFunctions"
 import SweetAlert from 'react-bootstrap-sweetalert'
+import styled from 'styled-components'
 import { handleErrors, reportError } from '../helper/sentryErrorHandling'
+import { getWindowDimensions } from "../helper/helperFunctions"
 
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 
-function SeriesInfo ({ match }) {
+const DivTitle = styled.div`
+  font-size: 1.5em;
+`
+
+function SeriesInfo (props) {
   const { user } = useAuth0();
 
   let [hasError, setError] = useState(false)
@@ -61,7 +66,7 @@ function SeriesInfo ({ match }) {
     },
     {
       name: 'watched',
-      cell: (data) => new Date(data.airstamp)>Date.now() || data.watched ?<div />:<button onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>&#10004;</button>,
+      cell: (data) => new Date(data.airstamp)>Date.now() || data.watched ?<div />:<button onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>&#10004;</button>,
       width: '10%',
       resizable: true,
     },
@@ -99,17 +104,17 @@ function SeriesInfo ({ match }) {
         <div>
           { !data.watched ? 
             <Dropdown as={ButtonGroup}>
-              <Button variant="success" onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>mark as watched</Button>
+              <Button variant="success" onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>mark as watched</Button>
 
               <Dropdown.Toggle split variant="success" id="dropdown-split-basic" />
 
               <Dropdown.Menu alignRight={true}>
-                <Dropdown.Item onClick={()=>markWatched(data.seriesId, data.extId, data.seasonNr, data.episodeNr, true, data.index)}>bulk mark</Dropdown.Item>
+                <Dropdown.Item onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, true, data.index)}>bulk mark</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
             :
             <Dropdown as={ButtonGroup}>
-              <Button variant="warning" onClick={()=>unmarkWatched(data.seriesId, data.extId)}>remove from watched episodes</Button>
+              <Button variant="warning" onClick={()=>unmarkWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonEpisodeNotation)}>remove from watched episodes</Button>
             </Dropdown>
           }
           </div>
@@ -119,7 +124,7 @@ function SeriesInfo ({ match }) {
     </div>
   )
   
-  async function markWatched(seriesId, episodeId, seasonNr, episodeNr, bulk, index) {
+  async function markWatched(seriesId, seriesTitle, episodeId, seasonNr, episodeNr, bulk, index) {
     
     let episodesArray = []
     if (bulk){
@@ -132,9 +137,13 @@ function SeriesInfo ({ match }) {
       episodesArray.push(episodeId)
     }
 
+    let episodeNotation = seasonEpisodeNotation(seasonNr, episodeNr)
+
     const data = {
       seriesId: seriesId,
+      seriesTitle: seriesTitle,
       episodesArray: JSON.stringify(episodesArray),
+      episodeNotation: episodeNotation,
       userId: user.sub
     }
 
@@ -154,12 +163,14 @@ function SeriesInfo ({ match }) {
     setShowMarkAsWatchedAlert(true)
   }
 
-  async function unmarkWatched(seriesId, extId) {
+  async function unmarkWatched(seriesId, seriesTitle, extId, episodeNotation) {
     
     const data = {
       episodeId: extId,
       seriesId: seriesId,
+      seriesTitle: seriesTitle,
       userId: user.sub,
+      episodeNotation: episodeNotation
     }
 
     await fetch('/.netlify/functions/episodesUnmarkWatched', {
@@ -186,7 +197,9 @@ function SeriesInfo ({ match }) {
   // this is true if we open a page for a show that we are not subscribed to
   let [showNotAdded, setShowNotAdded] = useState(false)
   
-  const { params: { extId:seriesId } } = match
+  const { params: { extId:seriesId } } = props.match
+  // series props
+  const { title, poster } = props.location.state
   
   function getUserSeries() {
     return fetch('/.netlify/functions/userSeriesRead', {
@@ -227,10 +240,13 @@ function SeriesInfo ({ match }) {
         } else {
           setEpisodesList(episodesRes.data.map(function(entry, idx){
             entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
+            entry.seriesTitle=title
             entry.index=idx
-            entry.watched=entry.userepisodes.length > 0
+            entry.userepisodes = entry.userepisodes.filter(e=>e.userId === user.sub)
+            entry.watched=entry.userepisodes.length > 0 ? entry.userepisodes[0].timeWatched : false
             return entry
           }))
+
           setEpisodeListLoading(false)
         }
       })
@@ -252,6 +268,17 @@ function SeriesInfo ({ match }) {
         {showNotAdded ? <p>This show is not linked to your account.</p>
         :
         <div>
+          <DivTitle>
+            {title}
+          </DivTitle>
+          <div style={{display:"flex"}}>
+            <LazyLoadImage
+              height={300*4/3} width={300}
+              placeholderSrc={EpisodePlaceholder}
+              effect="blur"
+              src={poster}
+            />
+          </div>
           <br/>
           <div style={{color: 'green'}}>green = Episode already watched</div>
           <div style={{color: 'red'}}>red = Episode not out yet</div>

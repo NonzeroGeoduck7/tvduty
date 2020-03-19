@@ -22,14 +22,22 @@ const schema = new mongoose.Schema({
   },
   episodeId: {
     type: Number,
-    required: [false]
+    required: false,
+  },
+  seriesTitle: {
+    type: String,
+    required: [true, 'seriesTitle field is required']
+  },
+  episodeNotation: {
+    type: String,
+    required: false,
   },
   dateEventCreated: {
-    type: String,
+    type: Date,
     required: [true, 'dateEventCreated field is required']
   },
   dateEventProcessed: {
-    type: String,
+    type: Date,
     required: [false],
   }
 })

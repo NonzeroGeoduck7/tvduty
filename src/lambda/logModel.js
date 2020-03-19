@@ -11,18 +11,30 @@ const schema = new mongoose.Schema({
     type: Date,
     required: [true, 'logDate field is required']
   },
+  userId: {
+    type: String,
+    required: false,
+  },
+  seriesTitle: {
+    type: String,
+    required: false,
+  },
   dbUpdateDuration: {
     type: Number,
-    required: [false]
+    required: false,
   },
   numSeriesUpdated: {
     type: Number,
-    required: [false]
+    required: false,
   },
   numEmailsSent: {
     type: Number,
-    required: [false]
+    required: false,
   },
+  episodeNotation: {
+    type: String,
+    required: false,
+  }
 })
 
 export default mongoose.model('log', schema)

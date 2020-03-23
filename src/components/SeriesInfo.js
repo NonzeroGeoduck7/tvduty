@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from "react-router-dom"
 import Loading from './Loading'
 import ErrorComponent from './ErrorComponent'
-import DataTable from 'react-data-table-component'
-import moment from 'moment'
+import EpisodeElement from './EpisodeElement'
+import StackGrid from 'react-stack-grid'
 import { useAuth0 } from "../react-auth0-wrapper"
 import { seasonEpisodeNotation } from "../helper/helperFunctions"
 import { LazyLoadImage } from 'react-lazy-load-image-component'
@@ -13,11 +13,8 @@ import EpisodePlaceholder from '../img/placeholder.png'
 import SweetAlert from 'react-bootstrap-sweetalert'
 import styled from 'styled-components'
 import { handleErrors, reportError } from '../helper/sentryErrorHandling'
-import { getWindowDimensions } from "../helper/helperFunctions"
 
-import Dropdown from 'react-bootstrap/Dropdown'
-import Button from 'react-bootstrap/Button'
-import ButtonGroup from 'react-bootstrap/ButtonGroup'
+import { getWindowDimensions } from "../helper/helperFunctions"
 
 const DivTitle = styled.div`
   font-size: 1.5em;
@@ -28,7 +25,7 @@ function SeriesInfo (props) {
 
   let [hasError, setError] = useState(false)
   let [errorEventId, setErrorEventId] = useState()
-  
+
   let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
   let [showMarkAsWatchedAlert, setShowMarkAsWatchedAlert] = useState(false)
 
@@ -41,89 +38,6 @@ function SeriesInfo (props) {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  var columns = [
-    {
-      name: 'Number',
-      selector: 'seasonEpisodeNotation',
-      sortable: true,
-      width: '10%',
-      resizable: true,
-    },
-    {
-      name: 'Title',
-      selector: 'title',
-      sortable: true,
-      width: '40%',
-      resizable: true,
-    },
-    {
-      name: 'Airdate',
-      selector: 'airstamp',
-      sortable: true,
-      format: d => moment(d.airstamp).format('llll'),
-      width: '30%',
-      resizable: true,
-    },
-    {
-      name: 'watched',
-      cell: (data) => new Date(data.airstamp)>Date.now() || data.watched ?<div />:<button onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>&#10004;</button>,
-      width: '10%',
-      resizable: true,
-    },
-  ]
-
-  var conditionalRowStyles = [
-    {
-      'when': row => row.airstamp == null || new Date(row.airstamp) > Date.now(),
-      style: {
-        backgroundColor: 'rgba(254, 36, 43, 0.2)', // light red
-      },
-    },
-    {
-      'when': row => row.watched,
-      style: {
-        backgroundColor: 'rgba(68, 249, 68, 0.2)', // light green
-      },
-    },
-  ];
-  
-  const { width } = windowDimensions
-  let imageWidth = Math.min(1280,width - 25)
-  const ExpandedComponent = ({ data }) => (
-    <div style={{width: document.innerWidth}}>
-      {/* TODO: scrollPosition is added to props. performance? */}
-      <LazyLoadImage
-        width={imageWidth}
-        height={imageWidth*9/16}
-        placeholderSrc={EpisodePlaceholder}
-        effect="blur"
-        src={data.image}
-      />
-
-      {new Date(data.airstamp)<Date.now()&&
-        <div>
-          { !data.watched ? 
-            <Dropdown as={ButtonGroup}>
-              <Button variant="success" onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, false, data.index)}>mark as watched</Button>
-
-              <Dropdown.Toggle split variant="success" id="dropdown-split-basic" />
-
-              <Dropdown.Menu alignRight={true}>
-                <Dropdown.Item onClick={()=>markWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonNr, data.episodeNr, true, data.index)}>bulk mark</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-            :
-            <Dropdown as={ButtonGroup}>
-              <Button variant="warning" onClick={()=>unmarkWatched(data.seriesId, data.seriesTitle, data.extId, data.seasonEpisodeNotation)}>remove from watched episodes</Button>
-            </Dropdown>
-          }
-          </div>
-        }
-
-      <div dangerouslySetInnerHTML={{ __html: data.summary }} />
-    </div>
-  )
-  
   async function markWatched(seriesId, seriesTitle, episodeId, seasonNr, episodeNr, bulk, index) {
     
     let episodesArray = []
@@ -190,9 +104,11 @@ function SeriesInfo (props) {
   }
   
   let [triggerRerender, setTriggerRerender] = useState(false)
+  const [stackGrid, setStackGrid] = useState()
 
   let [episodeListLoading, setEpisodeListLoading] = useState(false)
   let [episodesList, setEpisodesList] = useState([])
+  let [extendedEpisodes, setExtendedEpisodes] = useState([])
 
   // this is true if we open a page for a show that we are not subscribed to
   let [showNotAdded, setShowNotAdded] = useState(false)
@@ -200,7 +116,8 @@ function SeriesInfo (props) {
   const { params: { extId:seriesId } } = props.match
   // series props
   const { title, poster } = props.location.state
-  
+  const { width } = windowDimensions
+
   function getUserSeries() {
     return fetch('/.netlify/functions/userSeriesRead', {
       method: 'POST',
@@ -219,6 +136,14 @@ function SeriesInfo (props) {
       })
     }).then(res=>res.json())
 
+  }
+
+  function handleEpisodeElementOnClick(episodeId){
+    if (extendedEpisodes.includes(episodeId)){
+      setExtendedEpisodes(extendedEpisodes.filter(e=>e !== episodeId))
+    } else {
+      setExtendedEpisodes(extendedEpisodes.concat([episodeId]))
+    }
   }
 
   useEffect(() => {
@@ -257,6 +182,12 @@ function SeriesInfo (props) {
     // eslint-disable-next-line
   }, [seriesId, user.sub, triggerRerender])
 
+  useEffect(() => {
+    if (stackGrid) {
+      stackGrid.updateLayout()
+    }
+  }, [extendedEpisodes])
+
   return (
     hasError ? <ErrorComponent eventId={errorEventId} />:
     <div>
@@ -273,7 +204,7 @@ function SeriesInfo (props) {
           </DivTitle>
           <div style={{display:"flex"}}>
             <LazyLoadImage
-              height={300*4/3} width={300}
+              height={width/4*4/3} width={width/4}
               placeholderSrc={EpisodePlaceholder}
               effect="blur"
               src={poster}
@@ -284,19 +215,40 @@ function SeriesInfo (props) {
           <div style={{color: 'red'}}>red = Episode not out yet</div>
           <br/>
           {episodeListLoading ? <Loading /> :
-            <DataTable
-              title="Episode List"
-              columns={columns}
-              data={episodesList}
-              style={{width: document.innerWidth}}
-              conditionalRowStyles={conditionalRowStyles}
-              defaultSortField={"seasonEpisodeNotation"}
-              defaultSortAsc={false}
-              highlightOnHover
-              expandableRows
-              expandOnRowClicked
-              expandableRowsComponent={<ExpandedComponent />}
-            />
+            <div>
+              <label>Next Episode:</label>
+              {episodesList.filter(e=>!e.watched).slice(-1).map(e => {
+                    return <EpisodeElement
+                        markWatched={()=>markWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonNr, e.episodeNr, false, e.index)}
+                        markWatchedBulk={()=>markWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonNr, e.episodeNr, true, e.index)}
+                        unmarkWatched={()=>unmarkWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonEpisodeNotation)}
+                        key={e.extId}
+                        extended={true}
+                        imageWidth={width/3}
+                        data={e}
+                        />
+                })}
+              
+              <div>
+                <label>All Episodes:</label>
+                <StackGrid columnWidth={width*4/5} gridRef={grid=>setStackGrid(grid)}>
+                  {episodesList.map(e => {
+                      return <EpisodeElement
+                        markWatched={()=>markWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonNr, e.episodeNr, false, e.index)}
+                        markWatchedBulk={()=>markWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonNr, e.episodeNr, true, e.index)}
+                        unmarkWatched={()=>unmarkWatched(e.seriesId, e.seriesTitle, e.extId, e.seasonEpisodeNotation)}
+                        key={e.extId}
+                        extendFunction={()=>{handleEpisodeElementOnClick(e.extId)}}
+                        extended={extendedEpisodes.includes(e.extId)}
+                        imageWidth={width/3}
+                        data={e}
+                        />
+                  })}
+                </StackGrid>
+              </div>
+            }
+              
+            </div>
           }
           {showMarkAsWatchedAlert &&
             <SweetAlert

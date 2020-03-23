@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
             as: 'userepisodes'
         }
       },
-      { $sort : { seasonNr : 1, episodeNr: 1 } },
+      { $sort : { seasonNr : -1, episodeNr: -1 } },
     ])
 
     const response = {

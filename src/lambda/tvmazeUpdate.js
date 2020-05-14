@@ -459,7 +459,6 @@ exports.handler = catchErrors(async (event, context) => {
 
         var logsToStore = []
         
-        /*
         logsToStore.push({
             _id: mongoose.Types.ObjectId(),
             logType: 1000,
@@ -468,7 +467,6 @@ exports.handler = catchErrors(async (event, context) => {
             numSeriesUpdated: _.size(seriesToInsert),
             numEmailsSent: _.size(result)
         })
-        */
         
         var p3 = Log.insertMany(logsToStore)
         

@@ -5,7 +5,6 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 import placeholder from '../img/placeholder.png'
 import posed from 'react-pose'
 import styled from 'styled-components'
-import DeleteOverlayImage from '../img/delete.png'
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import { timeDiff } from '../helper/helperFunctions'
@@ -21,11 +20,57 @@ const ProgressDiv = styled.div`
 const NextEpisodeDiv = styled.button`
 	background: white;
     color: red;
-    font-size: 0.8em;
+	font-size: 0.8em;
+	margin-bottom: 0.4em;
     padding: -0.2em 0.8em;
     border: 2px solid ${props => props.color};
-    border-radius: 3px;
+	border-radius: 3px;
 `
+
+const OuterDiv = styled.div`
+	position: relative;
+	width: 100%;
+`
+
+/*
+const InnerDivPlusOneButton = styled.div`
+	position: absolute;
+	right: -${props=>props.width/2 - 20}px;
+	top: 2em;
+	margin: 5px 5px 5px 5px;
+	z-index: 2;
+	width: 100%;
+`
+*/
+
+/*
+const PlusOneButton = styled.button`
+	text-align: center;
+	horizontal-align: right;
+	background: none;
+    color: palevioletred;
+    font-size: 1.2em;
+    border: 2px solid grey;
+	border-radius: 3px;
+`
+*/
+
+const InnerDivDeleteButton = styled.div`
+	position: absolute;
+	top: 2em;
+	z-index: 3;
+	width: 100%;
+`
+
+const DeleteButton = styled.button`
+	text-align: center;
+	background: white;
+    color: palevioletred;
+    font-size: 2em;
+    border: 2px solid palevioletred;
+	border-radius: 3px;
+`
+
 
 const SeriesElement = React.memo(function SeriesElement(props) {
 	
@@ -66,18 +111,15 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 	return (
 		<div style={{'textAlign': 'center'}}>
 			<Hoverable>
-
-				<Link to={{pathname: "/series/"+props.extId, state: {title: props.title, poster: props.poster}}}>
-					<NextEpisodeDiv color={props.status === 'Ended'?"red":nextEpisodeText!=""?"blue":"green"}>
+				<Link to={{pathname: "/series/"+props.extId}}>
+					<NextEpisodeDiv color={props.status === 'Ended'?"red":nextEpisodeText!==""?"blue":"green"}>
 						{nextEpisodeText}
 					</NextEpisodeDiv>
 				</Link>
-				<div style={{"paddingTop": 3}}>
+				
+				<OuterDiv>
 					{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
-					
-					{props.isDeleteMode && <img onClick={props.deleteFunction} src={DeleteOverlayImage} alt={props.title+" delete"} style={{"width":props.width*4/5,"position":"absolute", "zIndex":1}} />}
-					
-					<Link to={{pathname: "/series/"+props.extId, state: {title: props.title, poster: props.poster}}}>
+					<Link to={{pathname: "/series/"+props.extId}}>
 						<LazyLoadImage
 							afterLoad={()=>{setShowProgressBar(true)}}
 							scrollPosition={props.scrollPosition}
@@ -88,7 +130,21 @@ const SeriesElement = React.memo(function SeriesElement(props) {
 						/>
 					</Link>
 					{showProgressBar&&<ProgressDiv height={`${watchPercentage*props.width*4/3/100}px`}/>}
-				</div>
+				</OuterDiv>
+				
+				{/*<InnerDivPlusOneButton width={props.width}>
+					<PlusOneButton>
+						{"+1"}
+					</PlusOneButton>
+				</InnerDivPlusOneButton>*/}
+				<InnerDivDeleteButton>
+					{props.isDeleteMode &&
+						<DeleteButton
+							onClick={props.deleteFunction}
+							width={props.width}>
+								{"remove"}
+						</DeleteButton>}
+				</InnerDivDeleteButton>
 			</Hoverable>
 			<div>
 				<label>

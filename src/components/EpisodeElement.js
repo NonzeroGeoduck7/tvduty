@@ -5,7 +5,7 @@ import placeholder from '../img/placeholder.png'
 import styled from 'styled-components'
 
 import 'react-lazy-load-image-component/src/effects/blur.css';
-import { timeDiff } from '../helper/helperFunctions'
+import { getWeekday, htmlSanitize } from '../helper/helperFunctions'
 
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button'
@@ -30,11 +30,15 @@ const MarkButtonsDiv = styled.div`
 
 const EpisodeElement = React.memo(function SeriesElement(props) {
 
+	function isEpisodeReleased(airstamp){
+		return airstamp != null && new Date(airstamp)<new Date()
+	}
+
 	const episode = props.data
 
 	const imageWidth = props.imageWidth
 	return (
-		<Wrapper watched={episode.watched} released={new Date(episode.airstamp)<new Date()} extended={props.extended}>
+		<Wrapper watched={episode.watched} released={isEpisodeReleased(episode.airstamp)} extended={props.extended}>
 			<div onClick={props.extendFunction} style={{width: '100%'}}>
 				<p>{props.extended?"▲":"▼"} {episode.seasonEpisodeNotation}: {episode.title}</p>
 			</div>
@@ -47,12 +51,23 @@ const EpisodeElement = React.memo(function SeriesElement(props) {
 						src={episode.image}
 					/>
 					<div style={{paddingLeft: 10}}>
-						<p>airdate: {new Date(episode.airstamp).toLocaleDateString()} at {new Date(episode.airstamp).toLocaleTimeString()}</p>
-						<p>{episode.summary}</p>
+						{ isEpisodeReleased(episode.airstamp) ?
+							<p>aired: {getWeekday(new Date(episode.airstamp))}, {new Date(episode.airstamp).toLocaleDateString()} at {new Date(episode.airstamp).toLocaleTimeString()}</p>
+							:
+							<p>will air: {getWeekday(new Date(episode.airstamp))}, {new Date(episode.airstamp).toLocaleDateString()} at {new Date(episode.airstamp).toLocaleTimeString()}</p>
+						}
+						{
+							episode.summary == null?
+								<p>no summary available</p>
+							:
+								htmlSanitize(episode.summary).replaceAll('<br/>', '<br />').replaceAll('<br>','<br />').split('<br />').map(function(line){
+									return <p>{line}</p>
+								}) 
+						}
 					</div>
 				</div>
 			}
-			{new Date(episode.airstamp)<Date.now() &&
+			{isEpisodeReleased(episode.airstamp) &&
 				<MarkButtonsDiv>
 				{ !episode.watched ?
 					<Dropdown as={ButtonGroup}>

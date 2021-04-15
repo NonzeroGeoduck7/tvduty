@@ -57,8 +57,11 @@ exports.handler = async (event, context) => {
         $project: {
           "_id": 1,
           "title": 1,
+          "seasonNr": 1,
+          "episodeNr": 1,
           "airstamp": 1,
           "series": "$series.title",
+          "poster": "$series.poster",
         }
       }
     ])

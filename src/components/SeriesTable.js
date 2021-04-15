@@ -6,14 +6,13 @@ import IpInfoComponent from './IpInfoComponent'
 import ErrorComponent from './ErrorComponent'
 import Loading from './Loading'
 import { Link } from 'react-router-dom'
-import StackGrid from 'react-stack-grid'
 import { trackWindowScroll } from 'react-lazy-load-image-component'
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import styled from 'styled-components'
 import SweetAlert from 'react-bootstrap-sweetalert'
 
 import { useAuth0 } from '../react-auth0-wrapper'
-import { getWindowDimensions,  } from '../helper/helperFunctions'
+import { getWindowDimensions } from '../helper/helperFunctions'
 import { handleErrors, reportError } from '../helper/sentryErrorHandling'
 
 const WrapperDiv = styled.div`
@@ -66,7 +65,7 @@ const StyledDiv = styled.div`
     border-radius: 3px;
 `
 
-function SeriesTable(scrollPosition) {
+function SeriesTable(props) {
 
     function handleKeyPress(key){
         switch(key) {
@@ -114,22 +113,21 @@ function SeriesTable(scrollPosition) {
 
     let [seriesList, setSeriesList] = useState([])
     let [originalSeriesList, setOriginalSeriesList] = useState([])
-    let [windowDimensions, setWindowDimensions] = useState(getWindowDimensions())
     let [seriesListLoading, setSeriesListLoading] = useState(false)
     let [searchString, setSearchString] = useState('')
 
     const { user } = useAuth0()
-    useEffect(() => {
-        function handleResize() {
-          setWindowDimensions(getWindowDimensions())
-        }
-
-        window.addEventListener("resize", handleResize)
-        return () => window.removeEventListener("resize", handleResize)
-    }, [])
 
     const userSub = user && user.sub
     useEffect(() => {
+        
+        function componentDidRecover() {
+            console.log('component recovered')
+            // do something
+        }
+
+        props.cacheLifecycles.didRecover(componentDidRecover)
+
         const report = async (err)=>{
             var eventId = await reportError(err)
             setErrorEventId(eventId)
@@ -158,17 +156,56 @@ function SeriesTable(scrollPosition) {
             report(err)
             setError(true)
         })
-    }, [user, userSub])
+        // eslint-disable-next-line
+    }, [user, userSub,])
 
     useEffect(() => {
         setSeriesList(originalSeriesList.filter(s=>s.title.toLowerCase().includes(searchString)))
         // eslint-disable-next-line
     }, [searchString])
 
-    const { width } = windowDimensions
+    const { width } = getWindowDimensions()
 
     // at least 2 items next to each other, and at max 10 items next to each other, minus some pixels for the vertical scrollbar, if any.
     const columnWidth = Math.min((width-100)/2, Math.max(330, (width-100)/10))
+
+    const numOfElements = parseInt(width / columnWidth)
+
+    // group for each line
+    var seriesListGrouped = []
+    var idx = 0
+    var tmp = []
+    //for (var s in seriesList){
+    seriesList.forEach(function(s){
+        if (idx < numOfElements){
+            tmp.push(s)
+            idx += 1
+        } else {
+            seriesListGrouped.push(tmp)
+            tmp = []
+            idx = 0
+        }
+    })
+
+    function renderElement(c){
+        var numWatchedEpisodes = c.userseries.numWatchedEpisodes
+
+        return <SeriesElement
+            isDeleteMode={deleteMode}
+            nextEpisodeAirstamp={c.nextEpisodeAirstamp}
+            nextEpisodeNotation={c.nextEpisodeNotation}
+            deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
+            key={c.extId}
+            width={columnWidth/1.25}
+            numWatchedEpisodes={numWatchedEpisodes}
+            nrOfEpisodes={c.nrOfAiredEpisodes}
+            title={c.title}
+            poster={c.poster}
+            extId={c.extId}
+            status={c.status}
+        />
+        //return <div><p>{JSON.stringify(c)}</p></div>
+    }
 
     return (
         <WrapperDiv>
@@ -196,25 +233,14 @@ function SeriesTable(scrollPosition) {
                         <DeleteButtonDiv>
                             <DeleteButton onClick={()=>setDeleteMode(!deleteMode)}>delete shows</DeleteButton>
                         </DeleteButtonDiv>
-                        <StackGrid columnWidth={columnWidth}>
-                            {seriesList.map(c => {
-                                var numWatchedEpisodes = c.userseries.numWatchedEpisodes
-                                return <SeriesElement
-                                    isDeleteMode={deleteMode}
-                                    nextEpisodeAirstamp={c.nextEpisodeAirstamp}
-                                    nextEpisodeNotation={c.nextEpisodeNotation}
-                                    deleteFunction={()=>{setShowIdToDelete(c.extId);setShowDeletedAlert(true)}}
-                                    scrollPosition={scrollPosition}
-                                    key={c.extId}
-                                    width={columnWidth/1.25}
-                                    numWatchedEpisodes={numWatchedEpisodes}
-                                    nrOfEpisodes={c.nrOfAiredEpisodes}
-                                    title={c.title}
-                                    poster={c.poster}
-                                    extId={c.extId}
-                                    status={c.status} />
-                            })}
-                        </StackGrid>
+                        {/*<StackGrid columnWidth={columnWidth}>*/}
+                            {seriesListGrouped.map(e => 
+                                <div key={e[0].extId} style={{"display": "inline-block", "width": 100/numOfElements+"%"}}>
+                                    {e.map(c => renderElement(c)
+                                    )}
+                                </div>)
+                            }
+                        {/*</StackGrid>*/}
                     </div>
                 }
             </StyledDiv>

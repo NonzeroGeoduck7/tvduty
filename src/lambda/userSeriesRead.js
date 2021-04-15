@@ -9,9 +9,17 @@ exports.handler = async (event, context, callback) => {
   try {
 
     const {seriesId, userId} = JSON.parse(event.body)
-          
+    
     // query
-    var result = await UserSeries.find({seriesId: seriesId, userId: userId})
+    let options = {}
+    if (typeof(seriesId) !== 'undefined') {
+      options.seriesId = seriesId
+    }
+    if (typeof(userId) !== 'undefined') {
+      options.userId = userId
+    }
+    
+    const result = await UserSeries.find(options)
 
     const response = {
       msg: 'userSeries successfully found',

@@ -2,7 +2,6 @@
 // 
 import React from 'react'
 import styled from 'styled-components'
-import posed from 'react-pose'
 
 import { useAuth0 } from '../react-auth0-wrapper'
 

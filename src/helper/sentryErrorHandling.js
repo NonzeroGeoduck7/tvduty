@@ -8,7 +8,7 @@ export const handleErrors = (response) => {
 }
 
 export async function reportError(error) {
-    console.warn(error)
+    console.warn("Reporting error: "+JSON.stringify(error))
 
     var eventId = null
     if (typeof error === 'string') {
@@ -17,6 +17,8 @@ export async function reportError(error) {
         eventId = Sentry.captureException(error)
     }
 
-    await Sentry.flush()
+    // await Sentry.await() // throws exception when error is '{}'
+    Sentry.close()
+    
     return eventId
 }

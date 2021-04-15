@@ -3,7 +3,8 @@
 import React from "react";
 import NavBar from "./components/Navbar";
 import { useAuth0 } from "./react-auth0-wrapper";
-import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { BrowserRouter, Route } from "react-router-dom";
+import CacheRoute, { CacheSwitch } from 'react-router-cache-route'
 
 import SeriesTable from './components/SeriesTable'
 import SeriesInfo from './components/SeriesInfo'
@@ -34,25 +35,25 @@ function App() {
         <header>
           <NavBar />
         </header>
-        <Switch>
+        <CacheSwitch>
           <AppContainer>
           {allowedToSee ? <React.Fragment>
-              <Route path="/" exact component={SeriesTable} />
-              <Route path="/series/:extId" component={SeriesInfo} />
+              <CacheRoute path="/" exact component={SeriesTable} when="always" />
+              <Route path="/series/:extId" component={SeriesInfo}/>
               <Route path="/add" component={Add} />
               <Route path="/settings" component={SettingsPage} />
               <Route path="/event/:eventUid" component={EventResult} />
             </React.Fragment> : 
             <React.Fragment>
-              <Route path="/" exact component={isAuthenticated ? SeriesTable : NotLoggedIn} />
-              <Route path="/series/:extId" component={user && !user.email_verified ? NotVerifiedAccount : NotLoggedIn} />
+              <CacheRoute path="/" exact component={isAuthenticated ? SeriesTable : NotLoggedIn} when="always" />
+              <Route path="/series/:extId" component={user && !user.email_verified ? NotVerifiedAccount : NotLoggedIn}/>
               <Route path="/add" component={user && !user.email_verified ? NotVerifiedAccount : NotLoggedIn} />
               <Route path="/settings" component={user && !user.email_verified ? NotVerifiedAccount : NotLoggedIn} />
               <Route path="/event/:eventUid" component={EventResult} />
             </React.Fragment>
           }
           </AppContainer>
-        </Switch>
+        </CacheSwitch>
       </BrowserRouter>
     </div>
   );

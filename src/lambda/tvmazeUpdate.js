@@ -8,7 +8,7 @@ import Event from '../lambda/eventModel'
 import Log from '../lambda/logModel'
 
 import { sendEmail } from '../helper/emailNotification.js'
-import { seasonEpisodeNotation, assureHttpsUrl } from '../helper/helperFunctions'
+import { seasonEpisodeNotation, htmlSanitize, assureHttpsUrl } from '../helper/helperFunctions'
 import { initSentry, catchErrors, reportError } from '../sentryWrapper'
 initSentry()
 
@@ -65,43 +65,6 @@ function addToMailBody(result, email, description, seriesTitle, update){
     })
 
     return result
-}
-
-function change(name, from, to){
-    return ' - '+ name + ': changed from ' + from + ' to ' + to + '.'
-}
-
-function diff(newEp, oldEp){
-    if (typeof oldEp === 'undefined'){
-        return 'new Episode: '+seasonEpisodeNotation(newEp.seasonNr,newEp.episodeNr)+': <b>'+newEp.title+'</b> '+(newEp.airstamp==null?'airdate unknown':'will air '+newEp.airstamp)+'.'
-    }
-
-    var changes = []
-    /*
-    if (newEp.title != oldEp.title){
-        changes.push(change('title', oldEp.title, newEp.title))
-    }
-    */
-    if (newEp.seasonNr !== oldEp.seasonNr){
-        changes.push(change('seasonNr', oldEp.seasonNr, newEp.seasonNr))
-    }
-    if (newEp.episodeNr !== oldEp.episodeNr){
-        changes.push(change('episodeNr', oldEp.episodeNr, newEp.episodeNr))
-    }
-    if (new Date(newEp.airstamp).toDateString() !== new Date(oldEp.airstamp).toDateString()){
-        changes.push(change('airstamp', oldEp.airstamp, newEp.airstamp))
-    }
-
-    if (changes.length > 0){
-        return seasonEpisodeNotation(newEp.seasonNr,newEp.episodeNr)+':<br>'+changes.join('<br>')
-    } else {
-        return ''
-    }
-}
-
-function isEmpty(obj) { 
-	for (var x in obj) { return false; }
-	return true;
 }
 
 function generateEventUrl(uniqueUid) {
@@ -364,7 +327,7 @@ exports.handler = catchErrors(async (event, context) => {
                     "seasonEpisodeNotation": seasonEpisodeNotation(ep.seasonNr,ep.episodeNr),
                     "episodeTitle": ep.title,
                     "episodeImage": ep.image,
-                    "episodeSummary": ep.summary,
+                    "episodeSummary": htmlSanitize(ep.summary),
                     "episodeAirDateTime": epDate.toDateString() + " " + epDate.toLocaleTimeString('ch-CH')
                 }
 
@@ -473,7 +436,7 @@ exports.handler = catchErrors(async (event, context) => {
         var promiseEmail = []
         for (email in result){
             result[email].currentDate = new Date().toDateString()
-            result[email].logoSrc = "https://www.whenairsthenextepisode.com/static/media/logo_font.png"
+            result[email].logoSrc = "https://www.whenairsthenextepisode.com/static/media/logo_name.png"
             result[email].websiteUrl = process.env.URL
             result[email].contactEmail = process.env.ZOHO_CONTACT_MAIL
             try{

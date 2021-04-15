@@ -1,7 +1,6 @@
 // src/components/SeriesInfo.js
 
 import React, { useState, useEffect } from 'react'
-import { Link } from "react-router-dom"
 import Loading from './Loading'
 import ErrorComponent from './ErrorComponent'
 import EpisodeElement from './EpisodeElement'
@@ -106,6 +105,9 @@ function SeriesInfo (props) {
   let [triggerRerender, setTriggerRerender] = useState(false)
   const [stackGrid, setStackGrid] = useState()
 
+  let [seriesInfo, setSeriesInfo] = useState({})
+  let [userSeriesInfo, setUserSeriesInfo] = useState({})
+
   let [episodeListLoading, setEpisodeListLoading] = useState(false)
   let [episodesList, setEpisodesList] = useState([])
   let [extendedEpisodes, setExtendedEpisodes] = useState([])
@@ -114,9 +116,18 @@ function SeriesInfo (props) {
   let [showNotAdded, setShowNotAdded] = useState(false)
   
   const { params: { extId:seriesId } } = props.match
-  // series props
-  const { title, poster } = props.location.state
+
   const { width } = windowDimensions
+  
+  function getSeriesInfo() {
+    console.log(seriesId)
+    return fetch('/.netlify/functions/seriesRead', {
+      method: 'POST',
+      body: JSON.stringify({
+        extId: seriesId
+      })
+    }).then(res=>res.json())
+  }
 
   function getUserSeries() {
     return fetch('/.netlify/functions/userSeriesRead', {
@@ -154,18 +165,21 @@ function SeriesInfo (props) {
     }
 
     setEpisodeListLoading(true)
-    Promise.all([getUserSeries(), getEpisodes()])
-      .then(function ([userSeriesRes, episodesRes]) {
+    Promise.all([getSeriesInfo(), getUserSeries(), getEpisodes()])
+      .then(function ([seriesRes, userSeriesRes, episodesRes]) {
 
         if (userSeriesRes.data.length < 1){
           setEpisodeListLoading(false)
           setShowNotAdded(true)
-        } else if (userSeriesRes.data.length > 1){
-          throw new Error("userSeries found > 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data)
+        } else if (userSeriesRes.data.length > 1 || seriesRes.data.length !== 1){
+          throw new Error("userSeries found > 1 result or seriesRes found != 1 result for seriesId "+seriesId+" and user "+user.sub+": "+userSeriesRes.data+" "+seriesRes.data)
         } else {
+          
+          setSeriesInfo(seriesRes.data[0])
+          setUserSeriesInfo(userSeriesRes.data[0])
           setEpisodesList(episodesRes.data.map(function(entry, idx){
             entry.seasonEpisodeNotation = seasonEpisodeNotation(entry.seasonNr, entry.episodeNr)
-            entry.seriesTitle=title
+            entry.seriesTitle=seriesRes.data[0].title
             entry.index=idx
             entry.userepisodes = entry.userepisodes.filter(e=>e.userId === user.sub)
             entry.watched=entry.userepisodes.length > 0 ? entry.userepisodes[0].timeWatched : false
@@ -186,29 +200,37 @@ function SeriesInfo (props) {
     if (stackGrid) {
       stackGrid.updateLayout()
     }
-  }, [extendedEpisodes])
+  }, [extendedEpisodes,stackGrid])
+
+  const imdbLink = 'https://www.imdb.com/title/'+seriesInfo.imdbId
 
   return (
     hasError ? <ErrorComponent eventId={errorEventId} />:
     <div>
       <div>
-        <Link to="/">
-          <button>Go back</button>
-        </Link>
+        {/*<Link to="/">*/}
+          <button onClick={props.history.goBack}>Go back</button>
+        {/*</Link>*/}
       </div>
         {showNotAdded ? <p>This show is not linked to your account.</p>
         :
         <div>
           <DivTitle>
-            {title}
+            {seriesInfo.title}
           </DivTitle>
           <div style={{display:"flex"}}>
             <LazyLoadImage
               height={width/4*4/3} width={width/4}
               placeholderSrc={EpisodePlaceholder}
               effect="blur"
-              src={poster}
+              src={seriesInfo.poster}
             />
+            <div>
+              <p>Series status: {seriesInfo.status}</p>
+              <p>Notification status: {userSeriesInfo.receiveNotification?"Activated":"Deactivated"}</p>
+              <p>Episode progress: {userSeriesInfo.numWatchedEpisodes}/{seriesInfo.nrOfAiredEpisodes} episodes watched</p>
+              { seriesInfo.imdbId && <a href={imdbLink}>imdb reference</a> }
+            </div>
           </div>
           <br/>
           <div style={{color: 'green'}}>green = Episode already watched</div>

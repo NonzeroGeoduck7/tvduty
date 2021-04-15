@@ -35,14 +35,46 @@ export const timeDiff = (time1, time2) => {
     return result
 }
 
+export const getWeekday = (date) => {
+
+    var weekdays = [
+        "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+    ];
+    
+    var day = date.getDay();
+    return weekdays[day];
+}
+
 export const markEpisodeAsWatched = async (seriesId, userId, seasonNr, episodeNr) => {
 
     // find out what index the episode in overall episode list has. start counting with 0.
     
 }
 
+export const htmlSanitize = (text) => {
+    
+    if (text == null){
+        return null
+    }
+
+    const remove = ['<p>', '</p>', '<b>', '</b>', '<i>', '</i>']
+    
+    const replace = ['&amp;']
+    const replaceWith = ['&']
+
+    let res = text
+    remove.forEach(function(element){
+        res = res.replaceAll(element, '')
+    })
+    replace.forEach(function(element, index){
+        res = res.replaceAll(element, replaceWith[index])
+    })
+
+    return res
+}
+
 export const assureHttpsUrl = (url) => {
-    if (url.startsWith("http")){
+    if (url.startsWith("http") && !url.startsWith("https")){
         return url.replace("http","https")
     } else {
         console.log("unknown url format: "+url)

@@ -8,24 +8,32 @@ exports.handler = async (event, context) => {
   
   try {
     // Use Series.Model to find all series matching the user
-    const { userId } = JSON.parse(event.body)
-    const series = await Series.aggregate([
-	    {
-	  	  $lookup: {
-	  	    from: 'userseries',
-	  	    localField: 'extId',
-	  	    foreignField: 'seriesId',
-	  	    as: 'userseries'
-	      }
-      },
-      { $unwind: "$userseries" },
-      { $match: { "userseries.userId": userId } },
-      { $sort : { "userseries.lastAccessed": -1 } }
-	  ]);
+    const { userId, extId } = JSON.parse(event.body)
+
+    let array = []
+    if (userId){
+      array = await Series.aggregate([
+        {
+          $lookup: {
+            from: 'userseries',
+            localField: 'extId',
+            foreignField: 'seriesId',
+            as: 'userseries'
+          }
+        },
+        { $unwind: "$userseries" },
+        { $match: { "userseries.userId": userId } },
+        { $sort : { "userseries.lastAccessed": -1 } }
+      ]);
+    } else if (extId) {
+      array = await Series.aggregate([
+        { $match: { extId: parseInt(extId) } }, //parse to int necessary for some reason
+      ])
+    }
 	  
     const response = {
       msg: 'Series successfully found',
-      data: series
+      data: array
     }
     
     return {
